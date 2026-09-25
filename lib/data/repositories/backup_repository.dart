@@ -3,9 +3,11 @@ import 'package:csv/csv.dart';
 import 'package:flutter/services.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
+import 'package:hissab/core/constants/app_assets.dart';
 import 'package:hissab/core/constants/currencies.dart';
 import 'package:hissab/core/utils/currency_formatter.dart';
 import 'package:hissab/core/utils/decimal_calculator.dart';
+import 'package:hissab/core/services/pdf_font_service.dart';
 import '../database/app_database.dart';
 import '../database/tables.dart';
 import '../models/book_model.dart';
@@ -167,7 +169,8 @@ class BackupRepository {
     required CurrencyConfig currency,
     required String dateRangeLabel,
   }) async {
-    final pdf = pw.Document();
+    final theme = await PdfFontService.instance.getPdfTheme();
+    final pdf = pw.Document(theme: theme);
 
     int totalIn = 0;
     int totalOut = 0;
@@ -182,6 +185,19 @@ class BackupRepository {
     final sorted = List<TransactionModel>.from(transactions)
       ..sort((a, b) => b.date.compareTo(a.date));
 
+    final isBookNameRtl = PdfFontService.isRtlText(book.name);
+
+    pw.MemoryImage? logoImage;
+    try {
+      final logoBytes = await rootBundle.load(AppAssets.logo);
+      logoImage = pw.MemoryImage(logoBytes.buffer.asUint8List());
+    } catch (_) {
+      try {
+        final logoBytes = await rootBundle.load(AppAssets.logoAlias);
+        logoImage = pw.MemoryImage(logoBytes.buffer.asUint8List());
+      } catch (_) {}
+    }
+
     pdf.addPage(
       pw.MultiPage(
         pageFormat: PdfPageFormat.a4,
@@ -190,17 +206,37 @@ class BackupRepository {
           // Header
           pw.Row(
             mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: pw.CrossAxisAlignment.center,
             children: [
-              pw.Column(
-                crossAxisAlignment: pw.CrossAxisAlignment.start,
+              pw.Row(
+                crossAxisAlignment: pw.CrossAxisAlignment.center,
                 children: [
-                  pw.Text('HISSAB CASHBOOK',
-                      style: pw.TextStyle(
-                          fontSize: 22, fontWeight: pw.FontWeight.bold, color: PdfColors.blue900)),
-                  pw.Text('Book: ${book.name}',
-                      style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold)),
-                  pw.Text('Currency: ${book.currency} | Generated: ${DateTime.now().toString().substring(0, 16)}',
-                      style: const pw.TextStyle(fontSize: 10, color: PdfColors.grey700)),
+                  if (logoImage != null)
+                    pw.Container(
+                      width: 44,
+                      height: 44,
+                      margin: const pw.EdgeInsets.only(right: 12),
+                      child: pw.ClipRRect(
+                        horizontalRadius: 8,
+                        verticalRadius: 8,
+                        child: pw.Image(logoImage, fit: pw.BoxFit.contain),
+                      ),
+                    ),
+                  pw.Column(
+                    crossAxisAlignment: pw.CrossAxisAlignment.start,
+                    children: [
+                      pw.Text('HISSAB CASHBOOK',
+                          style: pw.TextStyle(
+                              fontSize: 20, fontWeight: pw.FontWeight.bold, color: PdfColors.blue900)),
+                      pw.Directionality(
+                        textDirection: isBookNameRtl ? pw.TextDirection.rtl : pw.TextDirection.ltr,
+                        child: pw.Text('Book: ${book.name}',
+                            style: pw.TextStyle(fontSize: 13, fontWeight: pw.FontWeight.bold)),
+                      ),
+                      pw.Text('Currency: ${book.currency} | Generated: ${DateTime.now().toString().substring(0, 16)}',
+                          style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey700)),
+                    ],
+                  ),
                 ],
               ),
               pw.Container(
@@ -215,12 +251,15 @@ class BackupRepository {
                     pw.Text('Period: $dateRangeLabel',
                         style: pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold)),
                     pw.Text('Closing Balance:', style: const pw.TextStyle(fontSize: 10)),
-                    pw.Text(
-                      CurrencyFormatter.format(closingBalance, currency),
-                      style: pw.TextStyle(
-                        fontSize: 14,
-                        fontWeight: pw.FontWeight.bold,
-                        color: closingBalance >= 0 ? PdfColors.green800 : PdfColors.red800,
+                    pw.FittedBox(
+                      fit: pw.BoxFit.scaleDown,
+                      child: pw.Text(
+                        CurrencyFormatter.format(closingBalance, currency),
+                        style: pw.TextStyle(
+                          fontSize: 14,
+                          fontWeight: pw.FontWeight.bold,
+                          color: closingBalance >= 0 ? PdfColors.green800 : PdfColors.red800,
+                        ),
                       ),
                     ),
                   ],
@@ -232,7 +271,7 @@ class BackupRepository {
           pw.Divider(thickness: 1, color: PdfColors.grey300),
           pw.SizedBox(height: 12),
 
-          // Summary Cards
+          // Summary Cards (Overflow-safe with FittedBox)
           pw.Row(
             children: [
               _buildPdfStatBox('Opening Balance', CurrencyFormatter.format(book.openingBalanceMinor, currency), PdfColors.grey800),
@@ -246,29 +285,48 @@ class BackupRepository {
           ),
           pw.SizedBox(height: 16),
 
-          // Transactions Table
-          pw.TableHelper.fromTextArray(
-            headers: ['Date', 'Description', 'Method', 'In (+)', 'Out (-)'],
-            data: sorted.map((tx) {
-              final inStr = tx.type.isMoneyIn ? DecimalCalculator.formatDecimal(tx.amountMinorUnit, currency) : '-';
-              final outStr = tx.type.isMoneyOut ? DecimalCalculator.formatDecimal(tx.amountMinorUnit, currency) : '-';
-              return [
-                tx.date,
-                tx.description?.isNotEmpty == true ? tx.description! : tx.type.toDbString(),
-                tx.paymentMethod ?? 'Cash',
-                inStr,
-                outStr,
-              ];
-            }).toList(),
-            headerStyle: pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold, color: PdfColors.white),
-            headerDecoration: const pw.BoxDecoration(color: PdfColors.blue800),
-            rowDecoration: const pw.BoxDecoration(border: pw.Border(bottom: pw.BorderSide(color: PdfColors.grey200))),
-            cellStyle: const pw.TextStyle(fontSize: 9),
-            cellAlignment: pw.Alignment.centerLeft,
-            cellAlignments: {
-              3: pw.Alignment.centerRight,
-              4: pw.Alignment.centerRight,
+          // Transactions Table with full Unicode & RTL Directionality support
+          pw.Table(
+            columnWidths: {
+              0: const pw.FixedColumnWidth(65),
+              1: const pw.FlexColumnWidth(3.2),
+              2: const pw.FixedColumnWidth(65),
+              3: const pw.FlexColumnWidth(1.6),
+              4: const pw.FlexColumnWidth(1.6),
             },
+            children: [
+              // Table Header
+              pw.TableRow(
+                decoration: const pw.BoxDecoration(color: PdfColors.blue800),
+                children: [
+                  _buildPdfTableCell('Date', isHeader: true),
+                  _buildPdfTableCell('Description', isHeader: true),
+                  _buildPdfTableCell('Method', isHeader: true),
+                  _buildPdfTableCell('In (+)', isHeader: true, align: pw.TextAlign.right),
+                  _buildPdfTableCell('Out (-)', isHeader: true, align: pw.TextAlign.right),
+                ],
+              ),
+              // Table Data
+              ...sorted.map((tx) {
+                final desc = tx.description?.isNotEmpty == true ? tx.description! : tx.type.toDbString();
+                final isDescRtl = PdfFontService.isRtlText(desc);
+                final inStr = tx.type.isMoneyIn ? DecimalCalculator.formatDecimal(tx.amountMinorUnit, currency) : '-';
+                final outStr = tx.type.isMoneyOut ? DecimalCalculator.formatDecimal(tx.amountMinorUnit, currency) : '-';
+
+                return pw.TableRow(
+                  decoration: const pw.BoxDecoration(
+                    border: pw.Border(bottom: pw.BorderSide(color: PdfColors.grey200)),
+                  ),
+                  children: [
+                    _buildPdfTableCell(tx.date),
+                    _buildPdfTableCell(desc, isRtl: isDescRtl),
+                    _buildPdfTableCell(tx.paymentMethod ?? 'Cash'),
+                    _buildPdfTableCell(inStr, align: pw.TextAlign.right, color: tx.type.isMoneyIn ? PdfColors.green800 : PdfColors.grey800),
+                    _buildPdfTableCell(outStr, align: pw.TextAlign.right, color: tx.type.isMoneyOut ? PdfColors.red800 : PdfColors.grey800),
+                  ],
+                );
+              }),
+            ],
           ),
         ],
         footer: (context) => pw.Row(
@@ -286,10 +344,36 @@ class BackupRepository {
     return pdf.save();
   }
 
+  pw.Widget _buildPdfTableCell(
+    String text, {
+    bool isHeader = false,
+    bool isRtl = false,
+    pw.TextAlign align = pw.TextAlign.left,
+    PdfColor? color,
+  }) {
+    final style = pw.TextStyle(
+      fontSize: isHeader ? 9.5 : 8.5,
+      fontWeight: isHeader ? pw.FontWeight.bold : pw.FontWeight.normal,
+      color: isHeader ? PdfColors.white : (color ?? PdfColors.black),
+    );
+
+    return pw.Padding(
+      padding: const pw.EdgeInsets.symmetric(horizontal: 6, vertical: 5),
+      child: pw.Directionality(
+        textDirection: isRtl ? pw.TextDirection.rtl : pw.TextDirection.ltr,
+        child: pw.Text(
+          text,
+          style: style,
+          textAlign: isRtl ? pw.TextAlign.right : align,
+        ),
+      ),
+    );
+  }
+
   pw.Widget _buildPdfStatBox(String title, String value, PdfColor color) {
     return pw.Expanded(
       child: pw.Container(
-        padding: const pw.EdgeInsets.all(8),
+        padding: const pw.EdgeInsets.all(6),
         decoration: pw.BoxDecoration(
           border: pw.Border.all(color: PdfColors.grey300),
           borderRadius: pw.BorderRadius.circular(6),
@@ -297,16 +381,20 @@ class BackupRepository {
         child: pw.Column(
           crossAxisAlignment: pw.CrossAxisAlignment.start,
           children: [
-            pw.Text(title, style: const pw.TextStyle(fontSize: 8, color: PdfColors.grey600)),
-            pw.SizedBox(height: 4),
-            pw.Text(value, style: pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold, color: color)),
+            pw.Text(title, style: const pw.TextStyle(fontSize: 7.5, color: PdfColors.grey600), maxLines: 1),
+            pw.SizedBox(height: 3),
+            pw.FittedBox(
+              fit: pw.BoxFit.scaleDown,
+              alignment: pw.Alignment.centerLeft,
+              child: pw.Text(value, style: pw.TextStyle(fontSize: 9.5, fontWeight: pw.FontWeight.bold, color: color)),
+            ),
           ],
         ),
       ),
     );
   }
 
-  /// Generate professional Printable Receipt PDF
+  /// Generate professional Printable Receipt PDF with full Unicode & RTL support
   Future<Uint8List> generateReceiptPdf({
     required String businessName,
     required String receiptNumber,
@@ -318,7 +406,24 @@ class BackupRepository {
     String? purpose,
     String? notes,
   }) async {
-    final pdf = pw.Document();
+    final theme = await PdfFontService.instance.getPdfTheme();
+    final pdf = pw.Document(theme: theme);
+
+    final isBizRtl = PdfFontService.isRtlText(businessName);
+    final isReceivedRtl = PdfFontService.isRtlText(receivedFrom);
+    final isPurposeRtl = purpose != null && PdfFontService.isRtlText(purpose);
+    final isNotesRtl = notes != null && PdfFontService.isRtlText(notes);
+
+    pw.MemoryImage? logoImage;
+    try {
+      final logoBytes = await rootBundle.load(AppAssets.logo);
+      logoImage = pw.MemoryImage(logoBytes.buffer.asUint8List());
+    } catch (_) {
+      try {
+        final logoBytes = await rootBundle.load(AppAssets.logoAlias);
+        logoImage = pw.MemoryImage(logoBytes.buffer.asUint8List());
+      } catch (_) {}
+    }
 
     pdf.addPage(
       pw.Page(
@@ -335,9 +440,33 @@ class BackupRepository {
             children: [
               pw.Row(
                 mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                crossAxisAlignment: pw.CrossAxisAlignment.center,
                 children: [
-                  pw.Text(businessName.toUpperCase(),
-                      style: pw.TextStyle(fontSize: 18, fontWeight: pw.FontWeight.bold, color: PdfColors.blue900)),
+                  pw.Row(
+                    crossAxisAlignment: pw.CrossAxisAlignment.center,
+                    children: [
+                      if (logoImage != null)
+                        pw.Container(
+                          width: 32,
+                          height: 32,
+                          margin: const pw.EdgeInsets.only(right: 8),
+                          child: pw.ClipRRect(
+                            horizontalRadius: 6,
+                            verticalRadius: 6,
+                            child: pw.Image(logoImage, fit: pw.BoxFit.contain),
+                          ),
+                        ),
+                      pw.Directionality(
+                        textDirection: isBizRtl ? pw.TextDirection.rtl : pw.TextDirection.ltr,
+                        child: pw.Text(
+                          businessName.toUpperCase(),
+                          style: pw.TextStyle(fontSize: 15, fontWeight: pw.FontWeight.bold, color: PdfColors.blue900),
+                          maxLines: 2,
+                        ),
+                      ),
+                    ],
+                  ),
+                  pw.SizedBox(width: 8),
                   pw.Container(
                     padding: const pw.EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     decoration: pw.BoxDecoration(
@@ -356,7 +485,14 @@ class BackupRepository {
               pw.SizedBox(height: 12),
 
               pw.Text('Received With Thanks From:', style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey600)),
-              pw.Text(receivedFrom, style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold)),
+              pw.Directionality(
+                textDirection: isReceivedRtl ? pw.TextDirection.rtl : pw.TextDirection.ltr,
+                child: pw.Text(
+                  receivedFrom,
+                  style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold),
+                  textAlign: isReceivedRtl ? pw.TextAlign.right : pw.TextAlign.left,
+                ),
+              ),
               pw.SizedBox(height: 12),
 
               pw.Container(
@@ -369,9 +505,12 @@ class BackupRepository {
                   mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
                   children: [
                     pw.Text('Amount Received:', style: pw.TextStyle(fontSize: 12, fontWeight: pw.FontWeight.bold)),
-                    pw.Text(
-                      CurrencyFormatter.format(amountMinorUnit, currency),
-                      style: pw.TextStyle(fontSize: 16, fontWeight: pw.FontWeight.bold, color: PdfColors.green800),
+                    pw.FittedBox(
+                      fit: pw.BoxFit.scaleDown,
+                      child: pw.Text(
+                        CurrencyFormatter.format(amountMinorUnit, currency),
+                        style: pw.TextStyle(fontSize: 16, fontWeight: pw.FontWeight.bold, color: PdfColors.green800),
+                      ),
                     ),
                   ],
                 ),
@@ -379,13 +518,23 @@ class BackupRepository {
               pw.SizedBox(height: 12),
 
               if (purpose != null && purpose.isNotEmpty) ...[
-                pw.Text('Purpose / Towards: $purpose', style: const pw.TextStyle(fontSize: 10)),
+                pw.Directionality(
+                  textDirection: isPurposeRtl ? pw.TextDirection.rtl : pw.TextDirection.ltr,
+                  child: pw.Text('Purpose / Towards: $purpose',
+                      style: const pw.TextStyle(fontSize: 10),
+                      textAlign: isPurposeRtl ? pw.TextAlign.right : pw.TextAlign.left),
+                ),
                 pw.SizedBox(height: 6),
               ],
               pw.Text('Payment Method: $paymentMethod', style: const pw.TextStyle(fontSize: 10)),
               if (notes != null && notes.isNotEmpty) ...[
                 pw.SizedBox(height: 6),
-                pw.Text('Notes: $notes', style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey700)),
+                pw.Directionality(
+                  textDirection: isNotesRtl ? pw.TextDirection.rtl : pw.TextDirection.ltr,
+                  child: pw.Text('Notes: $notes',
+                      style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey700),
+                      textAlign: isNotesRtl ? pw.TextAlign.right : pw.TextAlign.left),
+                ),
               ],
 
               pw.Spacer(),

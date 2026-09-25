@@ -1,11 +1,10 @@
-import 'dart:io';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:provider/provider.dart';
-import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
 import 'core/localization/app_localizations.dart';
 import 'core/theme/app_theme.dart';
+import 'data/database/platform/database_platform.dart';
 import 'presentation/controllers/account_controller.dart';
 import 'presentation/controllers/app_controller.dart';
 import 'presentation/controllers/book_controller.dart';
@@ -19,11 +18,8 @@ import 'presentation/screens/security/pin_lock_screen.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Desktop FFI initialization for SQLite
-  if (!kIsWeb && (Platform.isWindows || Platform.isLinux)) {
-    sqfliteFfiInit();
-    databaseFactory = databaseFactoryFfi;
-  }
+  // Centralized, platform-isolated SQLite database initialization
+  await DatabasePlatform.initialize();
 
   runApp(const HissabApp());
 }
@@ -103,7 +99,19 @@ class _HissabAppViewState extends State<_HissabAppView> {
       supportedLocales: AppLocalizations.supportedLocales,
       localizationsDelegates: const [
         AppLocalizationsDelegate(),
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
       ],
+      localeResolutionCallback: (locale, supportedLocales) {
+        if (locale == null) return const Locale('en');
+        for (final supported in supportedLocales) {
+          if (supported.languageCode == locale.languageCode) {
+            return supported;
+          }
+        }
+        return const Locale('en');
+      },
       home: !_isInitialized
           ? const Scaffold(
               body: Center(

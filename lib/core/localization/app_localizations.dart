@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+/// Centralized localization service for Hissab.
+/// Supports English ('en'), Arabic ('ar'), and Urdu ('ur') with robust RTL handling and safe fallbacks.
 class AppLocalizations {
   final Locale locale;
 
@@ -20,7 +22,12 @@ class AppLocalizations {
     return langCode == 'ar' || langCode == 'ur';
   }
 
+  bool get isRtlLocale => isRtl(locale.languageCode);
+
   static final Map<String, Map<String, String>> _localizedValues = {
+    // -------------------------------------------------------------
+    // ENGLISH
+    // -------------------------------------------------------------
     'en': {
       'app.title': 'Hissab',
       'app.tagline': 'Professional CashBook & Ledger',
@@ -35,11 +42,12 @@ class AppLocalizations {
       'home.no_tx': 'No transactions recorded yet.',
       'home.quick_in': 'Money In (+)',
       'home.quick_out': 'Money Out (-)',
-      
+
       'nav.home': 'Home',
       'nav.transactions': 'Transactions',
       'nav.parties': 'Parties',
       'nav.reports': 'Reports',
+      'nav.settings': 'Settings',
       'nav.more': 'More',
 
       'books.title': 'My Books',
@@ -52,6 +60,8 @@ class AppLocalizations {
       'books.archive': 'Archive Book',
       'books.delete': 'Delete Book',
       'books.empty': 'No books available. Create one to get started.',
+      'books.color_theme': 'Book Color Theme',
+      'books.select_book': 'Select Book',
 
       'tx.add_in': 'Record Money In',
       'tx.add_out': 'Record Money Out',
@@ -73,6 +83,15 @@ class AppLocalizations {
       'tx.deleted_success': 'Transaction deleted.',
       'tx.saved_success': 'Transaction recorded successfully.',
       'tx.invalid_amount': 'Please enter a valid amount greater than 0.',
+
+      'voice.listening': 'Listening...',
+      'voice.tap_to_speak': 'Tap to speak',
+      'voice.speak_now': 'Speak transaction details (e.g. Paid 500 SAR for Office Rent)',
+      'voice.pause': 'Pause',
+      'voice.resume': 'Resume',
+      'voice.done': 'Done',
+      'voice.permission_required': 'Microphone permission is required for voice input.',
+      'voice.not_available': 'Speech recognition not available on this device.',
 
       'parties.title': 'Parties & Ledger',
       'parties.add': 'Add New Party',
@@ -124,7 +143,39 @@ class AppLocalizations {
       'settings.audit_log': 'Audit Trail',
       'settings.reconcile': 'Ledger Audit / Reconciliation',
       'settings.about': 'About Hissab',
+
+      'bank.choose_logo': 'Choose Logo',
+      'bank.saudi_arabia': 'Saudi Arabia',
+      'bank.pakistan': 'Pakistan',
+      'bank.custom_logo': 'Custom Logo',
+      'bank.search_bank': 'Search bank...',
+      'bank.import_logo': 'Import Custom Logo',
+      'bank.remove_logo': 'Remove Logo',
+      'bank.preview': 'Book Preview',
+      'bank.hissab_avatar': 'Hissab Initial Avatar',
+      'bank.bank_logo': 'Bank Logo',
+      'bank.custom_imported': 'Custom Imported Logo',
+      'bank.choose_bank': 'Select Bank',
+
+      'common.save': 'Save',
+      'common.cancel': 'Cancel',
+      'common.delete': 'Delete',
+      'common.edit': 'Edit',
+      'common.search': 'Search...',
+      'common.all': 'All',
+      'common.done': 'Done',
+      'common.close': 'Close',
+      'common.confirm': 'Confirm',
+      'common.yes': 'Yes',
+      'common.no': 'No',
+      'common.error': 'Error',
+      'common.success': 'Success',
+      'common.required': 'Required',
     },
+
+    // -------------------------------------------------------------
+    // ARABIC (العربية)
+    // -------------------------------------------------------------
     'ar': {
       'app.title': 'حِساب',
       'app.tagline': 'دفتر الأستاذ والنقدية الاحترافي',
@@ -144,6 +195,7 @@ class AppLocalizations {
       'nav.transactions': 'المعاملات',
       'nav.parties': 'الأطراف',
       'nav.reports': 'التقارير',
+      'nav.settings': 'الإعدادات',
       'nav.more': 'المزيد',
 
       'books.title': 'دفاتري',
@@ -156,6 +208,8 @@ class AppLocalizations {
       'books.archive': 'أرشفة الدفتر',
       'books.delete': 'حذف الدفتر',
       'books.empty': 'لا توجد دفاتر. أنشئ دفتراً للبدء.',
+      'books.color_theme': 'لون الدفتر',
+      'books.select_book': 'اختر الدفتر',
 
       'tx.add_in': 'تسجيل وارد (قبض)',
       'tx.add_out': 'تسجيل صادر (صرف)',
@@ -177,6 +231,15 @@ class AppLocalizations {
       'tx.deleted_success': 'تم حذف المعاملة بنجاح.',
       'tx.saved_success': 'تم حفظ المعاملة بنجاح.',
       'tx.invalid_amount': 'يرجى إدخال مبلغ صحيح أكبر من 0.',
+
+      'voice.listening': 'جارٍ الاستماع...',
+      'voice.tap_to_speak': 'اضغط للتحدث',
+      'voice.speak_now': 'تحدث بتفاصيل المعاملة (مثال: دفع 500 ريال إيجار المكتب)',
+      'voice.pause': 'إيقاف مؤقت',
+      'voice.resume': 'استئناف',
+      'voice.done': 'تم',
+      'voice.permission_required': 'يلزم إذن الميكروفون للإدخال الصوتي.',
+      'voice.not_available': 'التعرف الصوتي غير متوفر على هذا الجهاز.',
 
       'parties.title': 'الأطراف وسجل الحسابات',
       'parties.add': 'إضافة طرف جديد',
@@ -228,7 +291,39 @@ class AppLocalizations {
       'settings.audit_log': 'سجل العمليات (Audit Trail)',
       'settings.reconcile': 'فحص وتدقيق القيود',
       'settings.about': 'عن تطبيق حِساب',
+
+      'bank.choose_logo': 'اختر الشعار',
+      'bank.saudi_arabia': 'المملكة العربية السعودية',
+      'bank.pakistan': 'باكستان',
+      'bank.custom_logo': 'شعار مخصص',
+      'bank.search_bank': 'البحث عن بنك...',
+      'bank.import_logo': 'استيراد شعار مخصص',
+      'bank.remove_logo': 'إزالة الشعار',
+      'bank.preview': 'معاينة الدفتر',
+      'bank.hissab_avatar': 'شعار حساب الافتراضي',
+      'bank.bank_logo': 'شعار البنك',
+      'bank.custom_imported': 'شعار مخصص مستورد',
+      'bank.choose_bank': 'اختر البنك',
+
+      'common.save': 'حفظ',
+      'common.cancel': 'إلغاء',
+      'common.delete': 'حذف',
+      'common.edit': 'تعديل',
+      'common.search': 'بحث...',
+      'common.all': 'الكل',
+      'common.done': 'تم',
+      'common.close': 'إغلاق',
+      'common.confirm': 'تأكيد',
+      'common.yes': 'نعم',
+      'common.no': 'لا',
+      'common.error': 'خطأ',
+      'common.success': 'نجاح',
+      'common.required': 'مطلوب',
     },
+
+    // -------------------------------------------------------------
+    // URDU (اردو)
+    // -------------------------------------------------------------
     'ur': {
       'app.title': 'حساب',
       'app.tagline': 'پیشہ ورانہ ڈیجیٹل کیش بک اور کھاتہ',
@@ -248,6 +343,7 @@ class AppLocalizations {
       'nav.transactions': 'لین دین',
       'nav.parties': 'کھاتے / پارٹیاں',
       'nav.reports': 'رپورٹس',
+      'nav.settings': 'سیٹنگز',
       'nav.more': 'مزید',
 
       'books.title': 'میری کتب / کیش بکس',
@@ -260,6 +356,8 @@ class AppLocalizations {
       'books.archive': 'محفوظ کریں (آرکائیو)',
       'books.delete': 'بک ڈیلیٹ کریں',
       'books.empty': 'کوئی بک موجود نہیں ہے۔ شروع کرنے کے لیے نئی بک بنائیں۔',
+      'books.color_theme': 'بک کا رنگ و تھیم',
+      'books.select_book': 'بک منتخب کریں',
 
       'tx.add_in': 'آمدنی کا اندراج',
       'tx.add_out': 'خرچ کا اندراج',
@@ -281,6 +379,15 @@ class AppLocalizations {
       'tx.deleted_success': 'اندراج کامیابی سے ڈیلیٹ کر دیا گیا۔',
       'tx.saved_success': 'اندراج کامیابی سے محفوظ ہو گیا۔',
       'tx.invalid_amount': 'براہ کرم 0 سے بڑی درست رقم درج کریں۔',
+
+      'voice.listening': 'سن رہا ہے...',
+      'voice.tap_to_speak': 'بولنے کے لیے ٹیپ کریں',
+      'voice.speak_now': 'ٹرانزیکشن بولیں (مثلاً: آفس کرایہ 500 ریال دیا)',
+      'voice.pause': 'روکیں',
+      'voice.resume': 'دوبارہ شروع کریں',
+      'voice.done': 'مکمل',
+      'voice.permission_required': 'آواز سے اندراج کے لیے مائیکروفون کی اجازت درکار ہے۔',
+      'voice.not_available': 'اس ڈیوائس پر آواز کی شناخت دستیاب نہیں ہے۔',
 
       'parties.title': 'پارٹیاں اور کھاتہ',
       'parties.add': 'نئی پارٹی شامل کریں',
@@ -332,12 +439,43 @@ class AppLocalizations {
       'settings.audit_log': 'آڈٹ لاگ',
       'settings.reconcile': 'لیجر اور بیلنس کی جانچ',
       'settings.about': 'حساب کے بارے میں',
+
+      'bank.choose_logo': 'لوگو منتخب کریں',
+      'bank.saudi_arabia': 'سعودی عرب',
+      'bank.pakistan': 'پاکستان',
+      'bank.custom_logo': 'اپنا لوگو',
+      'bank.search_bank': 'بینک تلاش کریں...',
+      'bank.import_logo': 'لوگو درآمد کریں',
+      'bank.remove_logo': 'لوگو حذف کریں',
+      'bank.preview': 'بک کا پیش منظر',
+      'bank.hissab_avatar': 'حساب کا ابتدائی اوتار',
+      'bank.bank_logo': 'بینک کا لوگو',
+      'bank.custom_imported': 'درآمد شدہ ذاتی لوگو',
+      'bank.choose_bank': 'بینک منتخب کریں',
+
+      'common.save': 'محفوظ کریں',
+      'common.cancel': 'منسوخ کریں',
+      'common.delete': 'ڈیلیٹ کریں',
+      'common.edit': 'ترمیم کریں',
+      'common.search': 'تلاش کریں...',
+      'common.all': 'سب',
+      'common.done': 'مکمل',
+      'common.close': 'بند کریں',
+      'common.confirm': 'تصدیق کریں',
+      'common.yes': 'ہاں',
+      'common.no': 'نہیں',
+      'common.error': 'خرابی',
+      'common.success': 'کامیابی',
+      'common.required': 'لازمی',
     },
   };
 
-  String translate(String key) {
+  /// Translate key with fallback to English, then optional fallback or key itself.
+  /// Guaranteed NEVER to throw an unhandled exception.
+  String translate(String key, {String? fallback}) {
     return _localizedValues[locale.languageCode]?[key] ??
         _localizedValues['en']?[key] ??
+        fallback ??
         key;
   }
 }

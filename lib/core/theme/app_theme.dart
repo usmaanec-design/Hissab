@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'app_colors.dart';
@@ -5,7 +6,8 @@ import 'app_colors.dart';
 class AppTheme {
   static ThemeData get lightTheme {
     final base = ThemeData.light(useMaterial3: true);
-    final textTheme = GoogleFonts.plusJakartaSansTextTheme(base.textTheme);
+    final textTheme = (kIsWeb ? base.textTheme : GoogleFonts.plusJakartaSansTextTheme(base.textTheme))
+        .apply(fontFamilyFallback: const ['NotoSansArabic', 'Roboto', 'sans-serif']);
 
     return base.copyWith(
       scaffoldBackgroundColor: AppColors.lightBg,
@@ -99,7 +101,7 @@ class AppTheme {
         style: ElevatedButton.styleFrom(
           backgroundColor: AppColors.primary,
           foregroundColor: Colors.white,
-          minimumSize: const Size.fromHeight(50),
+          minimumSize: const Size(88, 48),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
           ),
@@ -127,7 +129,8 @@ class AppTheme {
 
   static ThemeData get darkTheme {
     final base = ThemeData.dark(useMaterial3: true);
-    final textTheme = GoogleFonts.plusJakartaSansTextTheme(base.textTheme);
+    final textTheme = (kIsWeb ? base.textTheme : GoogleFonts.plusJakartaSansTextTheme(base.textTheme))
+        .apply(fontFamilyFallback: const ['NotoSansArabic', 'Roboto', 'sans-serif']);
 
     return base.copyWith(
       scaffoldBackgroundColor: AppColors.darkBg,
@@ -221,7 +224,7 @@ class AppTheme {
         style: ElevatedButton.styleFrom(
           backgroundColor: AppColors.primaryLight,
           foregroundColor: Colors.white,
-          minimumSize: const Size.fromHeight(50),
+          minimumSize: const Size(88, 48),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
           ),

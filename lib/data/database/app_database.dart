@@ -1,10 +1,7 @@
-import 'dart:io';
-import 'package:flutter/foundation.dart';
-import 'package:path/path.dart' as p;
-import 'package:path_provider/path_provider.dart';
-import 'package:sqflite_common_ffi/sqflite_ffi.dart';
+import 'package:sqflite/sqflite.dart';
 import 'package:uuid/uuid.dart';
 
+import 'platform/database_platform.dart';
 import 'tables.dart';
 
 class AppDatabase {
@@ -19,31 +16,14 @@ class AppDatabase {
     return _database!;
   }
 
-  /// Initialize database with desktop / test ffi fallback if needed
+  /// Initialize database using centralized platform resolution
   Future<Database> _initDatabase({String? customPath}) async {
-    if (!kIsWeb && (Platform.isWindows || Platform.isLinux)) {
-      sqfliteFfiInit();
-      databaseFactory = databaseFactoryFfi;
-    }
+    await DatabasePlatform.initialize();
+    final dbPath = customPath ?? await DatabasePlatform.getDatabasePath('hissab_v1.db');
 
-    String dbPath;
-    if (customPath != null) {
-      dbPath = customPath;
-    } else if (!kIsWeb && (Platform.isWindows || Platform.isLinux)) {
-      final docDir = await getApplicationDocumentsDirectory();
-      final hissabDir = Directory(p.join(docDir.path, 'Hissab'));
-      if (!hissabDir.existsSync()) {
-        hissabDir.createSync(recursive: true);
-      }
-      dbPath = p.join(hissabDir.path, 'hissab_v1.db');
-    } else {
-      final dbFolder = await getDatabasesPath();
-      dbPath = p.join(dbFolder, 'hissab_v1.db');
-    }
-
-    return await openDatabase(
+    final db = await openDatabase(
       dbPath,
-      version: 1,
+      version: 3,
       onCreate: (db, version) async {
         await db.execute(Tables.createBooksTable);
         await db.execute(Tables.createAccountsTable);
@@ -51,15 +31,52 @@ class AppDatabase {
         await db.execute(Tables.createPartiesTable);
         await db.execute(Tables.createTransactionsTable);
         await db.execute(Tables.createAuditLogsTable);
+        await db.execute(Tables.createDescriptionHistoryTable);
+        await db.execute(Tables.createCategoryLearningsTable);
+        await db.execute(Tables.createContactHistoryTable);
 
         for (final idx in Tables.createIndexes) {
           await db.execute(idx);
+        }
+      },
+      onUpgrade: (db, oldVersion, newVersion) async {
+        if (oldVersion < 2) {
+          try {
+            await db.execute('ALTER TABLE ${Tables.books} ADD COLUMN is_deleted INTEGER NOT NULL DEFAULT 0;');
+          } catch (_) {}
+          try {
+            await db.execute('ALTER TABLE ${Tables.accounts} ADD COLUMN is_deleted INTEGER NOT NULL DEFAULT 0;');
+          } catch (_) {}
+        }
+        if (oldVersion < 3) {
+          try {
+            await db.execute('ALTER TABLE ${Tables.books} ADD COLUMN color INTEGER NOT NULL DEFAULT 4280656875;');
+          } catch (_) {}
+          try {
+            await db.execute('ALTER TABLE ${Tables.books} ADD COLUMN logo TEXT;');
+          } catch (_) {}
+          try {
+            await db.execute(Tables.createDescriptionHistoryTable);
+          } catch (_) {}
+          try {
+            await db.execute(Tables.createCategoryLearningsTable);
+          } catch (_) {}
+          try {
+            await db.execute(Tables.createContactHistoryTable);
+          } catch (_) {}
+          for (final idx in Tables.createIndexes) {
+            try {
+              await db.execute(idx);
+            } catch (_) {}
+          }
         }
       },
       onConfigure: (db) async {
         await db.execute('PRAGMA foreign_keys = ON;');
       },
     );
+
+    return db;
   }
 
   /// Seed default categories for a newly created Book
@@ -147,8 +164,7 @@ class AppDatabase {
 
   /// For testing or clean in-memory usage
   static Future<Database> createInMemoryDatabase() async {
-    sqfliteFfiInit();
-    databaseFactory = databaseFactoryFfi;
+    await DatabasePlatform.initialize();
     return await openDatabase(
       inMemoryDatabasePath,
       version: 1,
@@ -159,6 +175,9 @@ class AppDatabase {
         await db.execute(Tables.createPartiesTable);
         await db.execute(Tables.createTransactionsTable);
         await db.execute(Tables.createAuditLogsTable);
+        await db.execute(Tables.createDescriptionHistoryTable);
+        await db.execute(Tables.createCategoryLearningsTable);
+        await db.execute(Tables.createContactHistoryTable);
         for (final idx in Tables.createIndexes) {
           await db.execute(idx);
         }

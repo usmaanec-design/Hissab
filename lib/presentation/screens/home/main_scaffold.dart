@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:hissab/core/localization/app_localizations.dart';
 import 'package:hissab/presentation/controllers/book_controller.dart';
 import 'package:hissab/presentation/controllers/party_controller.dart';
 import 'package:hissab/presentation/controllers/transaction_controller.dart';
@@ -29,6 +30,8 @@ class _MainScaffoldState extends State<MainScaffold> {
 
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context);
+
     return Scaffold(
       body: IndexedStack(
         index: _currentIndex,
@@ -48,31 +51,31 @@ class _MainScaffoldState extends State<MainScaffold> {
             }
           }
         },
-        items: const [
+        items: [
           BottomNavigationBarItem(
-            icon: Icon(Icons.home_outlined),
-            activeIcon: Icon(Icons.home),
-            label: 'Home',
+            icon: const Icon(Icons.home_outlined),
+            activeIcon: const Icon(Icons.home),
+            label: loc.translate('nav.home'),
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.receipt_long_outlined),
-            activeIcon: Icon(Icons.receipt_long),
-            label: 'Transactions',
+            icon: const Icon(Icons.receipt_long_outlined),
+            activeIcon: const Icon(Icons.receipt_long),
+            label: loc.translate('nav.transactions'),
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.people_outline),
-            activeIcon: Icon(Icons.people),
-            label: 'Parties',
+            icon: const Icon(Icons.people_outline),
+            activeIcon: const Icon(Icons.people),
+            label: loc.translate('nav.parties'),
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.insert_chart_outlined),
-            activeIcon: Icon(Icons.insert_chart),
-            label: 'Reports',
+            icon: const Icon(Icons.insert_chart_outlined),
+            activeIcon: const Icon(Icons.insert_chart),
+            label: loc.translate('nav.reports'),
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.settings_outlined),
-            activeIcon: Icon(Icons.settings),
-            label: 'Settings',
+            icon: const Icon(Icons.settings_outlined),
+            activeIcon: const Icon(Icons.settings),
+            label: loc.translate('nav.settings'),
           ),
         ],
       ),

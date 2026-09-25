@@ -12,6 +12,8 @@ class BookRepository {
     required String currency,
     required int openingBalanceMinor,
     required String openingBalanceDate,
+    int? color,
+    String? logo,
   }) async {
     final db = await _dbProvider.database;
     final bookId = _uuid.v4();
@@ -23,6 +25,8 @@ class BookRepository {
       currency: currency.toUpperCase(),
       openingBalanceMinor: openingBalanceMinor,
       openingBalanceDate: openingBalanceDate,
+      color: color ?? 0xFF2563EB,
+      logo: logo,
       isArchived: false,
       createdAt: now,
       updatedAt: now,

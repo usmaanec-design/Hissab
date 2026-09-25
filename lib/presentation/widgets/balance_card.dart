@@ -5,6 +5,10 @@ import 'package:hissab/core/utils/currency_formatter.dart';
 import 'package:hissab/data/models/book_model.dart';
 import 'package:hissab/domain/accounting/accounting_engine.dart';
 
+import 'package:hissab/core/services/book_appearance_service.dart';
+import 'package:hissab/presentation/widgets/book_avatar_widget.dart';
+import 'package:hissab/presentation/widgets/responsive_money_text.dart';
+
 class BalanceCard extends StatelessWidget {
   final BookModel? book;
   final BookSummary summary;
@@ -22,16 +26,21 @@ class BalanceCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isNegative = summary.currentBalanceMinor < 0;
+    final bookColor = Color(book?.color ?? BookAppearanceService.defaultColor);
+    final bannerGradient = BookAppearanceService.getBannerGradient(bookColor);
+    final textColor = BookAppearanceService.getContrastTextColor(bookColor);
+    final subtextColor = BookAppearanceService.getContrastSubtextColor(bookColor);
 
-    return Container(
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 300),
       width: double.infinity,
       decoration: BoxDecoration(
-        gradient: AppColors.primaryGradient,
+        gradient: bannerGradient,
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: AppColors.primary.withAlpha(50),
-            blurRadius: 16,
+            color: bookColor.withAlpha(80),
+            blurRadius: 18,
             offset: const Offset(0, 8),
           ),
         ],
@@ -48,27 +57,33 @@ class BalanceCard extends StatelessWidget {
                 onTap: onSwitchBook,
                 borderRadius: BorderRadius.circular(20),
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                   decoration: BoxDecoration(
-                    color: Colors.white.withAlpha(35),
+                    color: Colors.black.withAlpha(35),
                     borderRadius: BorderRadius.circular(20),
                     border: Border.all(color: Colors.white.withAlpha(50)),
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Icon(Icons.menu_book_rounded, color: Colors.white, size: 14),
-                      const SizedBox(width: 6),
+                      BookAvatarWidget(
+                        bookName: book?.name ?? 'Book',
+                        bookColor: book?.color ?? BookAppearanceService.defaultColor,
+                        logo: book?.logo,
+                        size: 22,
+                        borderRadius: 6,
+                      ),
+                      const SizedBox(width: 8),
                       Text(
                         book?.name ?? 'Select Book',
-                        style: const TextStyle(
-                          color: Colors.white,
+                        style: TextStyle(
+                          color: textColor,
                           fontSize: 13,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
                       const SizedBox(width: 4),
-                      const Icon(Icons.keyboard_arrow_down_rounded, color: Colors.white, size: 16),
+                      Icon(Icons.keyboard_arrow_down_rounded, color: textColor, size: 18),
                     ],
                   ),
                 ),
@@ -76,13 +91,13 @@ class BalanceCard extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
-                  color: Colors.white.withAlpha(25),
+                  color: Colors.black.withAlpha(30),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(
                   currency.code,
-                  style: const TextStyle(
-                    color: Colors.white70,
+                  style: TextStyle(
+                    color: textColor.withAlpha(200),
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
                   ),
@@ -94,10 +109,10 @@ class BalanceCard extends StatelessWidget {
           const SizedBox(height: 16),
 
           // Total Balance Label & Big Amount
-          const Text(
+          Text(
             'Current Balance',
             style: TextStyle(
-              color: Colors.white70,
+              color: subtextColor,
               fontSize: 13,
               fontWeight: FontWeight.w500,
             ),
@@ -109,7 +124,7 @@ class BalanceCard extends StatelessWidget {
             child: Text(
               CurrencyFormatter.format(summary.currentBalanceMinor, currency),
               style: TextStyle(
-                color: isNegative ? const Color(0xFFFECDD3) : Colors.white,
+                color: isNegative ? const Color(0xFFFECDD3) : textColor,
                 fontSize: 32,
                 fontWeight: FontWeight.w800,
                 letterSpacing: -0.5,
@@ -151,15 +166,13 @@ class BalanceCard extends StatelessWidget {
                         ],
                       ),
                       const SizedBox(height: 4),
-                      Text(
-                        CurrencyFormatter.format(summary.totalMoneyInMinor, currency),
-                        style: const TextStyle(
-                          color: Color(0xFFA7F3D0),
-                          fontSize: 13,
-                          fontWeight: FontWeight.w700,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
+                      ResponsiveMoneyText(
+                        minorUnits: summary.totalMoneyInMinor,
+                        currency: currency,
+                        smart: true,
+                        color: const Color(0xFFA7F3D0),
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
                       ),
                     ],
                   ),
@@ -191,15 +204,13 @@ class BalanceCard extends StatelessWidget {
                         ],
                       ),
                       const SizedBox(height: 4),
-                      Text(
-                        CurrencyFormatter.format(summary.totalMoneyOutMinor, currency),
-                        style: const TextStyle(
-                          color: Color(0xFFFECDD3),
-                          fontSize: 13,
-                          fontWeight: FontWeight.w700,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
+                      ResponsiveMoneyText(
+                        minorUnits: summary.totalMoneyOutMinor,
+                        currency: currency,
+                        smart: true,
+                        color: const Color(0xFFFECDD3),
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
                       ),
                     ],
                   ),
@@ -218,17 +229,15 @@ class BalanceCard extends StatelessWidget {
                         style: TextStyle(color: Colors.white70, fontSize: 11),
                       ),
                       const SizedBox(height: 4),
-                      Text(
-                        CurrencyFormatter.format(summary.netCashFlowMinor, currency),
-                        style: TextStyle(
-                          color: summary.netCashFlowMinor >= 0
-                              ? const Color(0xFFA7F3D0)
-                              : const Color(0xFFFECDD3),
-                          fontSize: 13,
-                          fontWeight: FontWeight.w700,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
+                      ResponsiveMoneyText(
+                        minorUnits: summary.netCashFlowMinor,
+                        currency: currency,
+                        smart: true,
+                        color: summary.netCashFlowMinor >= 0
+                            ? const Color(0xFFA7F3D0)
+                            : const Color(0xFFFECDD3),
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
                       ),
                     ],
                   ),

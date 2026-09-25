@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:hissab/core/constants/currencies.dart';
+import 'package:hissab/core/services/book_appearance_service.dart';
 import 'package:hissab/core/theme/app_colors.dart';
 import 'package:hissab/core/utils/currency_formatter.dart';
 import 'package:hissab/core/utils/decimal_calculator.dart';
@@ -12,6 +13,8 @@ import 'package:hissab/presentation/controllers/transaction_controller.dart';
 import 'package:hissab/presentation/controllers/party_controller.dart';
 import 'package:hissab/presentation/controllers/account_controller.dart';
 import 'package:hissab/presentation/controllers/category_controller.dart';
+import 'package:hissab/presentation/widgets/bank_picker_sheet.dart';
+import 'package:hissab/presentation/widgets/book_avatar_widget.dart';
 
 class BooksScreen extends StatefulWidget {
   const BooksScreen({super.key});
@@ -48,6 +51,8 @@ class _BooksScreenState extends State<BooksScreen> with SingleTickerProviderStat
     CurrencyConfig selectedCurrency = editBook != null
         ? Currencies.findByCode(editBook.currency)
         : Currencies.sar;
+    int selectedColor = editBook?.color ?? BookAppearanceService.palette.first;
+    String? selectedLogo = editBook?.logo;
 
     showDialog(
       context: context,
@@ -59,6 +64,84 @@ class _BooksScreenState extends State<BooksScreen> with SingleTickerProviderStat
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                Center(
+                  child: Column(
+                    children: [
+                      GestureDetector(
+                        onTap: () async {
+                          final picked = await BankPickerSheet.show(
+                            ctx,
+                            currentLogo: selectedLogo,
+                            bookName: nameController.text.isNotEmpty ? nameController.text : 'B',
+                            bookColor: selectedColor,
+                          );
+                          if (picked != null) {
+                            setDialogState(() {
+                              selectedLogo = picked.isEmpty ? null : picked;
+                            });
+                          }
+                        },
+                        child: Stack(
+                          alignment: Alignment.bottomRight,
+                          children: [
+                            BookAvatarWidget(
+                              bookName: nameController.text.isNotEmpty ? nameController.text : 'B',
+                              bookColor: selectedColor,
+                              logo: selectedLogo,
+                              size: 76,
+                              borderRadius: 18,
+                            ),
+                            Container(
+                              padding: const EdgeInsets.all(6),
+                              decoration: BoxDecoration(
+                                color: Theme.of(context).colorScheme.primary,
+                                shape: BoxShape.circle,
+                                border: Border.all(color: Colors.white, width: 2),
+                              ),
+                              child: const Icon(Icons.edit, size: 14, color: Colors.white),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      OutlinedButton.icon(
+                        icon: const Icon(Icons.account_balance, size: 16),
+                        label: Text(
+                          selectedLogo != null && selectedLogo!.isNotEmpty
+                              ? 'Change Logo'
+                              : 'Choose Bank / Logo',
+                          style: const TextStyle(fontSize: 12),
+                        ),
+                        style: OutlinedButton.styleFrom(
+                          visualDensity: VisualDensity.compact,
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                        ),
+                        onPressed: () async {
+                          final picked = await BankPickerSheet.show(
+                            ctx,
+                            currentLogo: selectedLogo,
+                            bookName: nameController.text.isNotEmpty ? nameController.text : 'B',
+                            bookColor: selectedColor,
+                          );
+                          if (picked != null) {
+                            setDialogState(() {
+                              selectedLogo = picked.isEmpty ? null : picked;
+                            });
+                          }
+                        },
+                      ),
+                      if (selectedLogo != null && selectedLogo!.isNotEmpty)
+                        TextButton.icon(
+                          icon: const Icon(Icons.delete_outline, size: 14, color: AppColors.moneyOut),
+                          label: const Text('Remove Logo', style: TextStyle(color: AppColors.moneyOut, fontSize: 11)),
+                          onPressed: () {
+                            setDialogState(() => selectedLogo = null);
+                          },
+                        ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 12),
                 TextField(
                   controller: nameController,
                   decoration: const InputDecoration(
@@ -66,6 +149,46 @@ class _BooksScreenState extends State<BooksScreen> with SingleTickerProviderStat
                     hintText: 'e.g. Main Business, Personal',
                     prefixIcon: Icon(Icons.book_outlined),
                   ),
+                  onChanged: (_) => setDialogState(() {}),
+                ),
+                const SizedBox(height: 16),
+                const Text('Book Color Theme', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: BookAppearanceService.palette.map((colorVal) {
+                    final isSelected = selectedColor == colorVal;
+                    return GestureDetector(
+                      onTap: () {
+                        setDialogState(() => selectedColor = colorVal);
+                      },
+                      child: Container(
+                        width: 32,
+                        height: 32,
+                        decoration: BoxDecoration(
+                          color: Color(colorVal),
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: isSelected ? Colors.white : Colors.transparent,
+                            width: 2.5,
+                          ),
+                          boxShadow: isSelected
+                              ? [
+                                  BoxShadow(
+                                    color: Color(colorVal).withAlpha(140),
+                                    blurRadius: 6,
+                                    spreadRadius: 2,
+                                  ),
+                                ]
+                              : null,
+                        ),
+                        child: isSelected
+                            ? const Icon(Icons.check, size: 18, color: Colors.white)
+                            : null,
+                      ),
+                    );
+                  }).toList(),
                 ),
                 const SizedBox(height: 16),
                 const Text('Base Currency', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
@@ -113,7 +236,11 @@ class _BooksScreenState extends State<BooksScreen> with SingleTickerProviderStat
                 final bookController = context.read<BookController>();
 
                 if (editBook != null) {
-                  await bookController.updateBook(editBook.copyWith(name: name));
+                  await bookController.updateBook(editBook.copyWith(
+                    name: name,
+                    color: selectedColor,
+                    logo: selectedLogo,
+                  ));
                 } else {
                   final minorUnits =
                       DecimalCalculator.parseToMinorUnits(openingBalController.text, selectedCurrency) ?? 0;
@@ -128,6 +255,8 @@ class _BooksScreenState extends State<BooksScreen> with SingleTickerProviderStat
                     currency: selectedCurrency.code,
                     openingBalanceMinor: minorUnits,
                     openingBalanceDate: DateFormat('yyyy-MM-dd').format(DateTime.now()),
+                    color: selectedColor,
+                    logo: selectedLogo,
                   );
                   await appCtrl.setActiveBookId(newBook.id);
                   await txCtrl.loadForBook(newBook);
@@ -285,7 +414,7 @@ class _BooksScreenState extends State<BooksScreen> with SingleTickerProviderStat
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
               color: isActive
-                  ? AppColors.primaryLight
+                  ? Color(book.color)
                   : (isDark ? AppColors.darkBorder : AppColors.lightBorder),
               width: isActive ? 2 : 1,
             ),
@@ -300,13 +429,11 @@ class _BooksScreenState extends State<BooksScreen> with SingleTickerProviderStat
                   children: [
                     Row(
                       children: [
-                        Container(
-                          padding: const EdgeInsets.all(8),
-                          decoration: BoxDecoration(
-                            color: AppColors.primary.withAlpha(20),
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          child: const Icon(Icons.menu_book_rounded, color: AppColors.primaryLight, size: 22),
+                        BookAvatarWidget(
+                          bookName: book.name,
+                          bookColor: book.color,
+                          logo: book.logo,
+                          size: 42,
                         ),
                         const SizedBox(width: 12),
                         Column(

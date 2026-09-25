@@ -58,12 +58,16 @@ class BookController extends ChangeNotifier {
     required String currency,
     required int openingBalanceMinor,
     required String openingBalanceDate,
+    int? color,
+    String? logo,
   }) async {
     final newBook = await _bookRepository.createBook(
       name: name,
       currency: currency,
       openingBalanceMinor: openingBalanceMinor,
       openingBalanceDate: openingBalanceDate,
+      color: color,
+      logo: logo,
     );
 
     await loadBooks(preferredActiveBookId: newBook.id);

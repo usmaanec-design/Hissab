@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart';
 
+import 'package:hissab/core/constants/app_assets.dart';
 import 'package:hissab/core/constants/currencies.dart';
 import 'package:hissab/core/security/security_service.dart';
 import 'package:hissab/core/theme/app_colors.dart';
@@ -406,10 +407,24 @@ class SettingsScreen extends StatelessWidget {
           _buildSettingsCard(
             isDark: isDark,
             children: [
-              const ListTile(
-                leading: Icon(Icons.info_outline, color: AppColors.primaryLight),
-                title: Text('Hissab CashBook & Ledger'),
-                subtitle: Text('Version 1.0.0 • Offline-First & Deterministic Accounting'),
+              ListTile(
+                leading: ClipRRect(
+                  borderRadius: BorderRadius.circular(10),
+                  child: Image.asset(
+                    AppAssets.logo,
+                    width: 40,
+                    height: 40,
+                    fit: BoxFit.contain,
+                    errorBuilder: (_, __, ___) => Image.asset(
+                      AppAssets.logoAlias,
+                      width: 40,
+                      height: 40,
+                      fit: BoxFit.contain,
+                    ),
+                  ),
+                ),
+                title: const Text('Hissab CashBook & Ledger'),
+                subtitle: const Text('Version 1.0.0 • Offline-First & Deterministic Accounting'),
               ),
             ],
           ),
