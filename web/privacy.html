@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Privacy Policy - Hissab CashBook &amp; Ledger</title>
+  <link rel="icon" type="image/png" href="favicon.png"/>
+  <link rel="canonical" href="https://hissab-d2529.web.app/privacy-policy">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <!-- Floating WhatsApp Button -->
+  <a href="https://wa.me/966503763410?text=Hello%20Hissab%20Support" class="floating-whatsapp" target="_blank" rel="noopener noreferrer" title="Chat on WhatsApp (+966503763410)">
+    <svg viewBox="0 0 24 24">
+      <path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.019 3.287l-.711 2.598 2.664-.699c.97.531 1.83.814 2.8.814 3.18 0 5.766-2.587 5.767-5.766.001-3.18-2.585-5.766-5.771-5.766zm8.47 5.766c-.002 4.68-3.807 8.484-8.487 8.484-1.48 0-2.889-.387-4.113-1.063l-4.57 1.2 1.22-4.457c-.742-1.28-1.134-2.748-1.136-4.164.002-4.68 3.807-8.484 8.488-8.484 4.681 0 8.486 3.804 8.488 8.484z"/>
+    </svg>
+  </a>
+
+  <!-- Header -->
+  <header>
+    <div class="container nav-wrapper">
+      <a href="/" class="brand">
+        <img src="hissab_logo_120.png" alt="Hissab Official Logo" class="brand-logo">
+        <div class="brand-text">
+          <span class="brand-title">Hissab</span>
+          <span class="brand-tagline">CashBook &amp; Ledger</span>
+        </div>
+      </a>
+
+      <nav class="nav-links">
+        <a href="/">Home</a>
+        <a href="/#features">Features</a>
+        <a href="/#screenshots">Screenshots</a>
+        <a href="/#offline">Offline-First</a>
+        <a href="/#cloud-backup">Drive Backup</a>
+        <a href="/privacy-policy" class="active">Privacy</a>
+        <a href="/terms-and-conditions">Terms</a>
+        <a href="/contact">Contact</a>
+      </nav>
+
+      <div class="nav-actions">
+        <a href="/app" class="btn btn-primary">Open Web App</a>
+      </div>
+    </div>
+  </header>
+
+  <!-- Legal Main Content -->
+  <main class="legal-page">
+    <h1>Privacy Policy for Hissab</h1>
+    <div class="effective-date">Last updated: September 27, 2026</div>
+
+    <p>
+      At <strong>Hissab</strong> ("we", "our", or "the application"), accessible as an Android application and web application, 
+      the privacy of our users is paramount. This Privacy Policy document outlines the types of information collected and how it is used.
+    </p>
+
+    <div class="highlight-box">
+      <strong>Core Principle:</strong> Hissab is an <strong>offline-first</strong> bookkeeping and cashbook application. 
+      All your accounting entries, customer balances, income, and expenses are saved directly on your local device storage. 
+      Cloud backup is entirely optional and under your direct control.
+    </div>
+
+    <h2>1. Information We Collect and Process</h2>
+    <p>Hissab processes the following categories of information:</p>
+    <ul>
+      <li><strong>Financial &amp; Transactional Data:</strong> Book names, accounts, parties/contacts, transactions, categories, and receipts that you enter into Hissab are stored locally in your device's isolated SQLite database.</li>
+      <li><strong>Google Account Information:</strong> If you voluntarily connect your Google Account for cloud backups, we receive your Google Account stable identifier (sub), email address, and profile name. We do NOT receive your Google Account password.</li>
+      <li><strong>Recovery Key:</strong> When cloud backup is enabled, an authenticated 16-character recovery key is generated. This key is used client-side to encrypt your data before sending it to Google Drive.</li>
+    </ul>
+
+    <h2>2. Google User Data &amp; Drive API Scopes</h2>
+    <p>Hissab accesses Google APIs solely to provide seamless cloud backup and cross-device restoration functionality:</p>
+    <ul>
+      <li><strong>Google Identity Services:</strong> Used to authenticate your account and ensure your backup is tied exclusively to your Google Account.</li>
+      <li><strong>Google Drive Scope (<code>https://www.googleapis.com/auth/drive.file</code>):</strong>
+        <ul>
+          <li>We request the <strong>narrowest possible Drive scope</strong>.</li>
+          <li>Hissab <strong>ONLY</strong> creates, views, updates, and restores files created specifically by Hissab within your private Google Drive (in a dedicated <code>Hissab/</code> backup folder).</li>
+          <li>Hissab <strong>CANNOT</strong> access, read, or modify any other files, folders, photos, or documents in your Google Drive.</li>
+        </ul>
+      </li>
+    </ul>
+
+    <h2>3. Limited Use Requirements &amp; Data Protection</h2>
+    <p>
+      Hissab's use and transfer of information received from Google APIs to any other app will adhere to the 
+      <a href="https://developers.google.com/terms/api-services-user-data-policy" target="_blank" rel="noopener noreferrer" style="color: var(--primary); font-weight: 600;">
+        Google API Services User Data Policy
+      </a>, including the Limited Use requirements:
+    </p>
+    <ul>
+      <li>We do <strong>NOT</strong> sell, rent, lease, or monetize your personal or financial data.</li>
+      <li>We do <strong>NOT</strong> use or transfer Google user data for serving advertisements, retargeting, or personalized marketing.</li>
+      <li>We do <strong>NOT</strong> permit human reading of your financial data or Google user data unless required by applicable law.</li>
+      <li>All cloud backups uploaded to your Google Drive are encrypted using <strong>AES-256 authenticated encryption</strong> (with PBKDF2 key derivation and HMAC integrity verification) before leaving your device.</li>
+    </ul>
+
+    <h2>4. Data Retention, Control, and Deletion</h2>
+    <ul>
+      <li><strong>Local Data:</strong> You can delete any book, transaction, or all local data at any time from within the application or by clearing the app's local storage.</li>
+      <li><strong>Cloud Backups:</strong> Your encrypted backup files reside in your personal Google Drive account. You can delete these backup archives at any time directly through Google Drive or by selecting "Disconnect" inside Hissab Settings.</li>
+      <li><strong>Revoking Access:</strong> You can revoke Hissab's access to your Google Account at any time via your <a href="https://myaccount.google.com/permissions" target="_blank" rel="noopener noreferrer" style="color: var(--primary); font-weight: 600;">Google Account Security Permissions</a>.</li>
+    </ul>
+
+    <h2>5. Security of Your Data</h2>
+    <p>
+      We employ rigorous cryptographic standards to ensure your financial ledger remains private. Your backups cannot be decrypted without your 16-character recovery key and authorization from your authenticated Google Account.
+    </p>
+
+    <h2>6. Contact Developer</h2>
+    <p>
+      If you have questions, feedback, or inquiries regarding this Privacy Policy or data security, please contact the developer at:
+    </p>
+    <ul>
+      <li><strong>Developer:</strong> Muhammad Usman</li>
+      <li><strong>Email:</strong> <a href="mailto:usmaan.ec@gmail.com" style="color: var(--primary); font-weight: 600;">usmaan.ec@gmail.com</a></li>
+      <li><strong>WhatsApp Support:</strong> <a href="https://wa.me/966503763410" target="_blank" rel="noopener noreferrer" style="color: var(--primary); font-weight: 600;">+966 50 376 3410</a></li>
+      <li><strong>Developer Portfolio:</strong> <a href="https://usman-professional-portfolio.netlify.app/" target="_blank" rel="noopener noreferrer" style="color: var(--primary); font-weight: 600;">https://usman-professional-portfolio.netlify.app/</a></li>
+      <li><strong>Application:</strong> Hissab - CashBook &amp; Ledger</li>
+    </ul>
+  </main>
+
+  <!-- Footer -->
+  <footer>
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-about">
+          <a href="/" class="brand">
+            <img src="hissab_logo_120.png" alt="Hissab Logo" class="brand-logo">
+            <div class="brand-text">
+              <span class="brand-title">Hissab</span>
+              <span class="brand-tagline">CashBook &amp; Ledger</span>
+            </div>
+          </a>
+          <p>
+            Offline-first personal &amp; business accounting app. Simple, secure, and respectful of your data privacy.
+          </p>
+        </div>
+
+        <div class="footer-col">
+          <h5>Product</h5>
+          <ul>
+            <li><a href="/app">Launch Web App</a></li>
+            <li><a href="/#screenshots">App Screenshots</a></li>
+            <li><a href="/#features">Features</a></li>
+            <li><a href="/#offline">Offline-First</a></li>
+          </ul>
+        </div>
+
+        <div class="footer-col">
+          <h5>Legal &amp; Privacy</h5>
+          <ul>
+            <li><a href="/privacy-policy">Privacy Policy</a></li>
+            <li><a href="/terms-and-conditions">Terms &amp; Conditions</a></li>
+            <li><a href="/#cloud-backup">Google OAuth Disclosures</a></li>
+          </ul>
+        </div>
+
+        <div class="footer-col">
+          <h5>Developer &amp; Support</h5>
+          <ul>
+            <li><a href="/contact">Contact Support</a></li>
+            <li><a href="https://wa.me/966503763410?text=Hello%20Hissab%20Support" target="_blank" rel="noopener noreferrer">WhatsApp: +966 50 376 3410</a></li>
+            <li><a href="mailto:usmaan.ec@gmail.com">usmaan.ec@gmail.com</a></li>
+            <li><a href="https://usman-professional-portfolio.netlify.app/" target="_blank" rel="noopener noreferrer">Muhammad Usman Portfolio</a></li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="footer-bottom">
+        <div>&copy; 2026 Hissab. All rights reserved. Developed by <a href="https://usman-professional-portfolio.netlify.app/" target="_blank" rel="noopener noreferrer" style="color: var(--primary); font-weight: 700; text-decoration: none;">Muhammad Usman</a>.</div>
+        <div style="display: flex; gap: 1.5rem;">
+          <a href="/privacy-policy" style="color: var(--text-muted); text-decoration: none;">Privacy Policy</a>
+          <a href="/terms-and-conditions" style="color: var(--text-muted); text-decoration: none;">Terms of Service</a>
+          <a href="/contact" style="color: var(--text-muted); text-decoration: none;">Help &amp; Contact</a>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+</body>
+</html>

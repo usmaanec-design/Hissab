@@ -399,6 +399,37 @@ class _BooksScreenState extends State<BooksScreen> with SingleTickerProviderStat
     final bookController = context.read<BookController>();
     final activeBookId = bookController.activeBook?.id;
 
+    if (!isArchivedList && books.length > 1) {
+      return ReorderableListView.builder(
+        padding: const EdgeInsets.all(16),
+        itemCount: books.length,
+        buildDefaultDragHandles: false,
+        onReorder: (oldIndex, newIndex) {
+          bookController.reorderBooks(oldIndex, newIndex);
+        },
+        itemBuilder: (context, index) {
+          final book = books[index];
+          final isActive = book.id == activeBookId;
+          final currency = Currencies.findByCode(book.currency);
+          return ReorderableDelayedDragStartListener(
+            key: ValueKey('manage_book_${book.id}'),
+            index: index,
+            child: _buildBookCardItem(
+              context,
+              book: book,
+              isActive: isActive,
+              currency: currency,
+              isArchivedList: isArchivedList,
+              isDark: isDark,
+              bookController: bookController,
+              index: index,
+              totalCount: books.length,
+            ),
+          );
+        },
+      );
+    }
+
     return ListView.builder(
       padding: const EdgeInsets.all(16),
       itemCount: books.length,
@@ -407,8 +438,34 @@ class _BooksScreenState extends State<BooksScreen> with SingleTickerProviderStat
         final isActive = book.id == activeBookId;
         final currency = Currencies.findByCode(book.currency);
 
-        return Container(
-          margin: const EdgeInsets.only(bottom: 12),
+        return _buildBookCardItem(
+          context,
+          book: book,
+          isActive: isActive,
+          currency: currency,
+          isArchivedList: isArchivedList,
+          isDark: isDark,
+          bookController: bookController,
+          index: index,
+          totalCount: books.length,
+        );
+      },
+    );
+  }
+
+  Widget _buildBookCardItem(
+    BuildContext context, {
+    required BookModel book,
+    required bool isActive,
+    required CurrencyConfig currency,
+    required bool isArchivedList,
+    required bool isDark,
+    required BookController bookController,
+    required int index,
+    required int totalCount,
+  }) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
           decoration: BoxDecoration(
             color: isDark ? AppColors.darkCard : Colors.white,
             borderRadius: BorderRadius.circular(16),
@@ -487,8 +544,28 @@ class _BooksScreenState extends State<BooksScreen> with SingleTickerProviderStat
                 const SizedBox(height: 12),
                 const Divider(),
                 Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
                   children: [
+                    if (!isArchivedList && totalCount > 1) ...[
+                      Tooltip(
+                        message: 'Move Up',
+                        child: IconButton(
+                          icon: const Icon(Icons.arrow_upward_rounded, size: 20),
+                          onPressed: index > 0
+                              ? () => bookController.moveBookByOffset(index, -1)
+                              : null,
+                        ),
+                      ),
+                      Tooltip(
+                        message: 'Move Down',
+                        child: IconButton(
+                          icon: const Icon(Icons.arrow_downward_rounded, size: 20),
+                          onPressed: index < totalCount - 1
+                              ? () => bookController.moveBookByOffset(index, 1)
+                              : null,
+                        ),
+                      ),
+                    ],
+                    const Spacer(),
                     if (!isActive && !isArchivedList)
                       TextButton.icon(
                         icon: const Icon(Icons.check_circle_outline, size: 16),
@@ -537,7 +614,5 @@ class _BooksScreenState extends State<BooksScreen> with SingleTickerProviderStat
             ),
           ),
         );
-      },
-    );
   }
 }

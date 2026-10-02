@@ -23,7 +23,7 @@ class AppDatabase {
 
     final db = await openDatabase(
       dbPath,
-      version: 3,
+      version: 4,
       onCreate: (db, version) async {
         await db.execute(Tables.createBooksTable);
         await db.execute(Tables.createAccountsTable);
@@ -69,6 +69,23 @@ class AppDatabase {
               await db.execute(idx);
             } catch (_) {}
           }
+        }
+        if (oldVersion < 4) {
+          try {
+            await db.execute('ALTER TABLE ${Tables.books} ADD COLUMN display_order INTEGER NOT NULL DEFAULT 0;');
+          } catch (_) {}
+          try {
+            await db.execute('CREATE INDEX IF NOT EXISTS idx_books_order ON ${Tables.books}(display_order);');
+          } catch (_) {}
+          try {
+            final existing = await db.query(Tables.books, orderBy: 'created_at ASC');
+            for (int i = 0; i < existing.length; i++) {
+              final bId = existing[i]['id'] as String?;
+              if (bId != null) {
+                await db.update(Tables.books, {'display_order': i}, where: 'id = ?', whereArgs: [bId]);
+              }
+            }
+          } catch (_) {}
         }
       },
       onConfigure: (db) async {

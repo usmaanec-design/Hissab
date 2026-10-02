@@ -17,6 +17,7 @@ import 'package:hissab/presentation/screens/categories/categories_screen.dart';
 import 'package:hissab/presentation/screens/parties/parties_screen.dart';
 import 'package:hissab/presentation/screens/transactions/add_transaction_screen.dart';
 import 'package:hissab/presentation/screens/transactions/transactions_screen.dart';
+import 'package:hissab/presentation/widgets/add_note_dialog.dart';
 import 'package:hissab/presentation/widgets/balance_card.dart';
 import 'package:hissab/presentation/widgets/book_avatar_widget.dart';
 import 'package:hissab/presentation/widgets/all_books_horizontal_bars.dart';
@@ -60,6 +61,15 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
     );
     _refreshGlobalSummary();
+  }
+
+  void _openAddNote(BuildContext context) async {
+    final book = context.read<BookController>().activeBook;
+    if (book == null) return;
+    final saved = await AddNoteDialog.show(context, book: book);
+    if (saved == true) {
+      _refreshGlobalSummary();
+    }
   }
 
   Future<void> _switchActiveBook(BuildContext context, String bookId) async {
@@ -267,9 +277,18 @@ class _HomeScreenState extends State<HomeScreen> {
 
                     const SizedBox(height: 16),
 
-                    // Quick Action Hub (Row of 4 icons: Parties, Categories, Accounts, Transfer)
+                    // Quick Action Hub (5 items: Udhar Note, Parties, Categories, Accounts, Entries)
                     Row(
                       children: [
+                        _buildQuickTile(
+                          context,
+                          icon: Icons.edit_note_rounded,
+                          label: 'Udhar Note',
+                          color: const Color(0xFFF59E0B),
+                          onTap: () => _openAddNote(context),
+                          isDark: isDark,
+                        ),
+                        const SizedBox(width: 6),
                         _buildQuickTile(
                           context,
                           icon: Icons.people_outline,
@@ -278,7 +297,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const PartiesScreen())),
                           isDark: isDark,
                         ),
-                        const SizedBox(width: 8),
+                        const SizedBox(width: 6),
                         _buildQuickTile(
                           context,
                           icon: Icons.category_outlined,
@@ -287,7 +306,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const CategoriesScreen())),
                           isDark: isDark,
                         ),
-                        const SizedBox(width: 8),
+                        const SizedBox(width: 6),
                         _buildQuickTile(
                           context,
                           icon: Icons.account_balance_outlined,
@@ -296,7 +315,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AccountsScreen())),
                           isDark: isDark,
                         ),
-                        const SizedBox(width: 8),
+                        const SizedBox(width: 6),
                         _buildQuickTile(
                           context,
                           icon: Icons.receipt_long_outlined,
@@ -321,6 +340,14 @@ class _HomeScreenState extends State<HomeScreen> {
                           MaterialPageRoute(builder: (_) => const BooksScreen()),
                         ).then((_) => _refreshGlobalSummary());
                       },
+                      onReorder: (oldIdx, newIdx) async {
+                        await context.read<BookController>().reorderBooks(oldIdx, newIdx);
+                        await _refreshGlobalSummary();
+                      },
+                      onMoveByOffset: (index, offset) async {
+                        await context.read<BookController>().moveBookByOffset(index, offset);
+                        await _refreshGlobalSummary();
+                      },
                     ),
 
                     const SizedBox(height: 24),
@@ -331,6 +358,14 @@ class _HomeScreenState extends State<HomeScreen> {
                       globalData: _globalData,
                       displayCurrency: currency,
                       onBookTap: (id) => _switchActiveBook(context, id),
+                      onReorder: (oldIdx, newIdx) async {
+                        await context.read<BookController>().reorderBooks(oldIdx, newIdx);
+                        await _refreshGlobalSummary();
+                      },
+                      onMoveByOffset: (index, offset) async {
+                        await context.read<BookController>().moveBookByOffset(index, offset);
+                        await _refreshGlobalSummary();
+                      },
                     ),
 
                     const SizedBox(height: 80), // Padding for QuickActionBar
@@ -341,6 +376,7 @@ class _HomeScreenState extends State<HomeScreen> {
       bottomSheet: QuickActionBar(
         onMoneyIn: () => _openAddTransaction(context, TransactionType.income),
         onMoneyOut: () => _openAddTransaction(context, TransactionType.expense),
+        onAddNote: () => _openAddNote(context),
       ),
     );
   }

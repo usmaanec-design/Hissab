@@ -12,9 +12,12 @@ import 'package:hissab/presentation/controllers/book_controller.dart';
 import 'package:hissab/presentation/controllers/category_controller.dart';
 import 'package:hissab/presentation/controllers/party_controller.dart';
 import 'package:hissab/presentation/controllers/transaction_controller.dart';
+import 'package:hissab/core/services/backup_crypto_service.dart';
+import 'package:hissab/presentation/controllers/cloud_backup_controller.dart';
 import 'package:hissab/presentation/screens/home/main_scaffold.dart';
 import 'package:hissab/presentation/widgets/bank_picker_sheet.dart';
 import 'package:hissab/presentation/widgets/book_avatar_widget.dart';
+import 'package:hissab/presentation/widgets/google_web_sign_in_button.dart';
 
 class OnboardingScreen extends StatefulWidget {
   const OnboardingScreen({super.key});
@@ -54,6 +57,252 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
         _logoBase64 = picked.isEmpty ? null : picked;
       });
     }
+  }
+
+  Future<void> _handleRestoreFromGoogle() async {
+    final backupCtrl = context.read<CloudBackupController>();
+    final messenger = ScaffoldMessenger.of(context);
+
+    if (!backupCtrl.isConnected) {
+      if (backupCtrl.supportsAuthenticate) {
+        final signedIn = await backupCtrl.signIn();
+        if (!signedIn || !mounted) {
+          if (!signedIn && mounted) {
+            messenger.showSnackBar(
+              SnackBar(
+                content: Text(backupCtrl.statusMessage ?? 'Google Sign-In could not complete.'),
+                backgroundColor: AppColors.moneyOut,
+              ),
+            );
+          }
+          return;
+        }
+      } else {
+        // Web: Show GIS dialog
+        await showDialog(
+          context: context,
+          builder: (ctx) => Consumer<CloudBackupController>(
+            builder: (_, ctrl, __) {
+              if (ctrl.isConnected) {
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  if (Navigator.canPop(ctx)) Navigator.pop(ctx);
+                });
+              }
+              return AlertDialog(
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                title: const Row(
+                  children: [
+                    Icon(Icons.cloud_download_outlined, color: AppColors.primaryLight),
+                    SizedBox(width: 8),
+                    Text('Restore from Google'),
+                  ],
+                ),
+                content: const Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text('Sign in with your Google Account to locate your backed-up Hissab data.'),
+                    SizedBox(height: 20),
+                    GoogleWebSignInWidget(),
+                  ],
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(ctx),
+                    child: const Text('Cancel'),
+                  ),
+                ],
+              );
+            },
+          ),
+        );
+        if (!backupCtrl.isConnected || !mounted) return;
+      }
+    }
+
+    // Check Drive for backup
+    await backupCtrl.refreshDiscoveredBackup();
+    final file = backupCtrl.discoveredBackup;
+
+    if (!mounted) return;
+
+    if (file == null) {
+      showDialog(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: const Text('No Previous Backup Found'),
+          content: const Text(
+            'No existing Hissab backup was found on this Google Account. Let\'s get started by creating your first Cashbook.',
+          ),
+          actions: [
+            ElevatedButton(
+              onPressed: () {
+                Navigator.pop(ctx);
+                _pageController.animateToPage(
+                  1,
+                  duration: const Duration(milliseconds: 350),
+                  curve: Curves.easeInOut,
+                );
+              },
+              child: const Text('Create First Book'),
+            ),
+          ],
+        ),
+      );
+      return;
+    }
+
+    final keyController = TextEditingController(text: backupCtrl.recoveryKey ?? '');
+    final booksCount = file.properties['booksCount'] ?? '1+';
+    final txCount = file.properties['transactionsCount'] ?? '0';
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => AlertDialog(
+        title: const Row(
+          children: [
+            Icon(Icons.cloud_done_rounded, color: AppColors.moneyIn),
+            SizedBox(width: 8),
+            Text('Cloud Backup Found!'),
+          ],
+        ),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'A previous Hissab backup was found on your Google Account:',
+                style: TextStyle(fontSize: 13, color: Colors.grey),
+              ),
+              const SizedBox(height: 12),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.blue.withValues(alpha: 0.08),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Column(
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text('Backup Date:', style: TextStyle(fontSize: 12, color: Colors.grey)),
+                        Text(DateFormat('dd MMM yyyy').format(file.modifiedTime),
+                            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                      ],
+                    ),
+                    const SizedBox(height: 6),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text('Total Books:', style: TextStyle(fontSize: 12, color: Colors.grey)),
+                        Text(booksCount, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                      ],
+                    ),
+                    const SizedBox(height: 6),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text('Transactions:', style: TextStyle(fontSize: 12, color: Colors.grey)),
+                        Text(txCount, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+              const Text(
+                'Enter your 16-character Recovery Key:',
+                style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 6),
+              TextField(
+                controller: keyController,
+                textCapitalization: TextCapitalization.characters,
+                decoration: const InputDecoration(
+                  hintText: 'XXXX-XXXX-XXXX-XXXX',
+                  prefixIcon: Icon(Icons.vpn_key_rounded, size: 20),
+                  border: OutlineInputBorder(),
+                ),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              _pageController.animateToPage(
+                1,
+                duration: const Duration(milliseconds: 350),
+                curve: Curves.easeInOut,
+              );
+            },
+            child: const Text('Start Fresh'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.moneyIn,
+              foregroundColor: Colors.white,
+            ),
+            onPressed: () async {
+              final key = keyController.text.trim();
+              if (!BackupCryptoService.isValidKeyFormat(key)) {
+                messenger.showSnackBar(
+                  const SnackBar(content: Text('Please enter a valid 16-character recovery key.')),
+                );
+                return;
+              }
+
+              final nav = Navigator.of(ctx);
+              nav.pop();
+
+              final navigator = Navigator.of(context);
+              final bookCtrl = context.read<BookController>();
+              final txCtrl = context.read<TransactionController>();
+              final partyCtrl = context.read<PartyController>();
+              final accCtrl = context.read<AccountController>();
+              final catCtrl = context.read<CategoryController>();
+              final appCtrl = context.read<AppController>();
+
+              final result = await backupCtrl.restoreBackup(
+                fileId: file.id,
+                recoveryKey: key,
+                replaceExisting: true,
+              );
+
+              if (!mounted) return;
+
+              if (result.isSuccess) {
+                await bookCtrl.loadBooks();
+                final active = bookCtrl.activeBook;
+                if (active != null) {
+                  await appCtrl.setActiveBookId(active.id);
+                  await txCtrl.loadForBook(active);
+                  await partyCtrl.loadForBook(active.id);
+                  await accCtrl.loadForBook(active.id);
+                  await catCtrl.loadForBook(active.id);
+                }
+
+                if (!mounted) return;
+                navigator.pushReplacement(
+                  MaterialPageRoute(builder: (_) => const MainScaffold()),
+                );
+              } else {
+                messenger.showSnackBar(
+                  SnackBar(
+                    content: Text(result.errorMessage ?? 'Restore failed.'),
+                    backgroundColor: AppColors.moneyOut,
+                  ),
+                );
+              }
+            },
+            child: const Text('Restore My Data'),
+          ),
+        ],
+      ),
+    );
   }
 
   void _finishCreateBook() async {
@@ -137,18 +386,30 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          ClipRRect(
-            borderRadius: BorderRadius.circular(24),
-            child: Image.asset(
-              AppAssets.logo,
-              width: 100,
-              height: 100,
-              fit: BoxFit.contain,
-              errorBuilder: (_, __, ___) => Image.asset(
-                AppAssets.logoAlias,
-                width: 100,
-                height: 100,
-                fit: BoxFit.contain,
+          Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(28),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: isDark ? 0.45 : 0.16),
+                  blurRadius: 24,
+                  offset: const Offset(0, 8),
+                ),
+              ],
+            ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(28),
+              child: Image.asset(
+                AppAssets.logo,
+                width: 140,
+                height: 140,
+                fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) => Image.asset(
+                  AppAssets.logoAlias,
+                  width: 140,
+                  height: 140,
+                  fit: BoxFit.cover,
+                ),
               ),
             ),
           ),
@@ -178,6 +439,26 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           _buildFeatureRow(Icons.auto_stories_rounded, 'Multi-Book System', 'Manage business, personal, shop, and family ledgers separately.', isDark),
           const SizedBox(height: 18),
           _buildFeatureRow(Icons.mic_rounded, 'Smart Voice & Auto-Category', 'Dictate transactions with speech-to-text and auto-categorization.', isDark),
+          const SizedBox(height: 28),
+          OutlinedButton.icon(
+            style: OutlinedButton.styleFrom(
+              minimumSize: const Size(double.infinity, 48),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              side: const BorderSide(color: AppColors.primaryLight),
+            ),
+            icon: const Icon(Icons.cloud_download_outlined, color: AppColors.primaryLight),
+            label: const Text(
+              'Restore from Google Account',
+              style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.primaryLight),
+            ),
+            onPressed: _handleRestoreFromGoogle,
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Google Sign-in is optional (for Cloud Drive backup only). You can tap "Get Started" to use 100% offline.',
+            style: TextStyle(fontSize: 11, color: isDark ? Colors.grey[500] : Colors.grey[600]),
+            textAlign: TextAlign.center,
+          ),
         ],
       ),
     );

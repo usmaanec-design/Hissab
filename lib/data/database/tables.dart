@@ -19,6 +19,7 @@ class Tables {
       opening_balance_date TEXT NOT NULL,
       color INTEGER NOT NULL DEFAULT 4280656875,
       logo TEXT,
+      display_order INTEGER NOT NULL DEFAULT 0,
       is_archived INTEGER NOT NULL DEFAULT 0,
       is_deleted INTEGER NOT NULL DEFAULT 0,
       created_at TEXT NOT NULL,
@@ -162,5 +163,6 @@ class Tables {
     'CREATE INDEX IF NOT EXISTS idx_desc_hist ON $descriptionHistory(book_id, tx_type);',
     'CREATE INDEX IF NOT EXISTS idx_cat_learn ON $categoryLearnings(book_id, keyword);',
     'CREATE INDEX IF NOT EXISTS idx_contact_hist ON $contactHistory(book_id);',
+    'CREATE INDEX IF NOT EXISTS idx_books_order ON $books(display_order);',
   ];
 }

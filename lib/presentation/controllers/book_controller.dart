@@ -99,4 +99,43 @@ class BookController extends ChangeNotifier {
     await _bookRepository.deleteBookPermanently(bookId);
     await loadBooks();
   }
+
+  /// Move book by an offset (-1 for left/up, +1 for right/down)
+  Future<void> moveBookByOffset(int currentIndex, int offset) async {
+    final targetIndex = currentIndex + offset;
+    if (targetIndex < 0 || targetIndex >= _books.length || currentIndex < 0 || currentIndex >= _books.length) {
+      return;
+    }
+
+    final movedBook = _books.removeAt(currentIndex);
+    _books.insert(targetIndex, movedBook);
+
+    // Immediate UI update
+    notifyListeners();
+
+    // Persist canonical order to SQLite
+    final orderedIds = _books.map((b) => b.id).toList();
+    await _bookRepository.updateBookOrder(orderedIds);
+  }
+
+  /// Move book from oldIndex to newIndex and persist the new canonical order to SQLite
+  Future<void> reorderBooks(int oldIndex, int newIndex) async {
+    if (oldIndex < 0 || oldIndex >= _books.length || newIndex < 0 || newIndex > _books.length) return;
+
+    if (oldIndex < newIndex) {
+      newIndex -= 1;
+    }
+    if (oldIndex == newIndex) return;
+
+    final movedBook = _books.removeAt(oldIndex);
+    _books.insert(newIndex, movedBook);
+
+    // Immediate UI update
+    notifyListeners();
+
+    // Persist canonical order to SQLite
+    final orderedIds = _books.map((b) => b.id).toList();
+    await _bookRepository.updateBookOrder(orderedIds);
+  }
 }
+

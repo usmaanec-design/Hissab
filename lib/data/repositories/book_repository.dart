@@ -19,6 +19,10 @@ class BookRepository {
     final bookId = _uuid.v4();
     final now = DateTime.now().toIso8601String();
 
+    // Determine next displayOrder so new book is placed at the end of the order
+    final orderRes = await db.rawQuery('SELECT COALESCE(MAX(display_order), -1) + 1 AS next_order FROM ${Tables.books} WHERE is_deleted = 0');
+    final nextOrder = (orderRes.first['next_order'] as num?)?.toInt() ?? 0;
+
     final book = BookModel(
       id: bookId,
       name: name.trim(),
@@ -27,6 +31,7 @@ class BookRepository {
       openingBalanceDate: openingBalanceDate,
       color: color ?? 0xFF2563EB,
       logo: logo,
+      displayOrder: nextOrder,
       isArchived: false,
       createdAt: now,
       updatedAt: now,
@@ -54,9 +59,28 @@ class BookRepository {
     final result = await db.query(
       Tables.books,
       where: where,
-      orderBy: 'created_at DESC',
+      orderBy: 'display_order ASC, created_at DESC',
     );
     return result.map((m) => BookModel.fromMap(m)).toList();
+  }
+
+  /// Persists reordered book IDs atomically to SQLite
+  Future<void> updateBookOrder(List<String> orderedBookIds) async {
+    final db = await _dbProvider.database;
+    final now = DateTime.now().toIso8601String();
+    await db.transaction((txn) async {
+      for (int i = 0; i < orderedBookIds.length; i++) {
+        await txn.update(
+          Tables.books,
+          {
+            'display_order': i,
+            'updated_at': now,
+          },
+          where: 'id = ?',
+          whereArgs: [orderedBookIds[i]],
+        );
+      }
+    });
   }
 
   Future<BookModel?> getBookById(String id) async {

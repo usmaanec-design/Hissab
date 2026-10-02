@@ -1,4 +1,5 @@
 import 'dart:math' as math;
+import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import '../../core/constants/currencies.dart';
 import '../../core/theme/app_colors.dart';
@@ -7,31 +8,36 @@ import '../../domain/services/dashboard_summary_service.dart';
 import 'book_avatar_widget.dart';
 import 'responsive_money_text.dart';
 
-/// Modern, responsive horizontal bar visualization for All Books Overview.
-/// Replaces the cramped circular/donut chart with clean grouped horizontal bars.
+/// Modern, responsive horizontal card and bar visualization for All Books Overview & Activity.
 ///
 /// Features:
-/// - Overflow-safe across all screen widths and extreme numbers (billions/trillions).
+/// - Horizontally scrollable collection of overview & activity cards matching My Books.
+/// - Drag-and-drop reordering following canonical Book.displayOrder.
 /// - Global across all books; never filtered by active book.
-/// - Income (green) and Expense (red) proportional visual bars per book.
-/// - Compact amounts with tap/hover tooltips showing exact full values.
-/// - Scrollable container supporting 20, 50, or 100+ books gracefully.
+/// - Proportional Income (green) and Expense (red) visual bars per book.
+/// - Overflow-safe across all screen widths and extreme numbers (billions/trillions).
+/// - Tap to view exact mathematical totals in modal sheet.
 class AllBooksHorizontalBars extends StatelessWidget {
   final GlobalDashboardData globalData;
   final CurrencyConfig displayCurrency;
   final Function(String bookId)? onBookTap;
+  final Function(int oldIndex, int newIndex)? onReorder;
+  final Function(int index, int offset)? onMoveByOffset;
 
   const AllBooksHorizontalBars({
     super.key,
     required this.globalData,
     required this.displayCurrency,
     this.onBookTap,
+    this.onReorder,
+    this.onMoveByOffset,
   });
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final summaries = globalData.bookSummaries;
+    final canReorder = (onReorder != null || onMoveByOffset != null) && summaries.length > 1;
 
     if (summaries.isEmpty) {
       return Container(
@@ -82,14 +88,35 @@ class AllBooksHorizontalBars extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Row(
+              Row(
                 children: [
-                  Icon(Icons.bar_chart_rounded, size: 22, color: AppColors.primaryLight),
-                  SizedBox(width: 8),
-                  Text(
+                  const Icon(Icons.bar_chart_rounded, size: 22, color: AppColors.primaryLight),
+                  const SizedBox(width: 8),
+                  const Text(
                     'All Books Overview',
                     style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                   ),
+                  if (canReorder) ...[
+                    const SizedBox(width: 6),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: AppColors.primaryLight.withAlpha(20),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: const Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.swap_horiz_rounded, size: 12, color: AppColors.primaryLight),
+                          SizedBox(width: 2),
+                          Text(
+                            'Arrows to Adjust',
+                            style: TextStyle(fontSize: 9.5, color: AppColors.primaryLight, fontWeight: FontWeight.w600),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ],
               ),
               Container(
@@ -167,18 +194,18 @@ class AllBooksHorizontalBars extends StatelessWidget {
             ),
           ),
 
-          const SizedBox(height: 20),
+          const SizedBox(height: 18),
 
           // 3. Section Title
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               const Text(
-                'Book Activity & Comparison',
+                'All Book Activity & Comparison',
                 style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.grey),
               ),
               Text(
-                'Tap for details',
+                'Swipe & Tap',
                 style: TextStyle(fontSize: 11, color: isDark ? Colors.grey[500] : Colors.grey[600]),
               ),
             ],
@@ -186,28 +213,64 @@ class AllBooksHorizontalBars extends StatelessWidget {
 
           const SizedBox(height: 10),
 
-          // 4. Grouped Horizontal Bars (Scrollable if many books)
-          ConstrainedBox(
-            constraints: const BoxConstraints(maxHeight: 380),
-            child: summaries.length > 4
-                ? RawScrollbar(
-                    thumbColor: AppColors.primaryLight.withAlpha(100),
-                    radius: const Radius.circular(4),
-                    thickness: 3,
-                    child: ListView.separated(
-                      shrinkWrap: true,
-                      itemCount: summaries.length,
-                      separatorBuilder: (_, __) => const Divider(height: 16),
-                      itemBuilder: (context, i) => _buildBookBarCard(context, summaries[i], maxActivity),
-                    ),
+          // 4. Horizontally Scrollable & Reorderable Cards (Part 2 & Part 3)
+          SizedBox(
+            height: 148,
+            child: canReorder && onReorder != null
+                ? ReorderableListView.builder(
+                    scrollDirection: Axis.horizontal,
+                    buildDefaultDragHandles: false,
+                    itemCount: summaries.length,
+                    onReorder: (oldIndex, newIndex) {
+                      onReorder!(oldIndex, newIndex);
+                    },
+                    proxyDecorator: (child, index, animation) {
+                      return AnimatedBuilder(
+                        animation: animation,
+                        builder: (context, child) {
+                          final animValue = Curves.easeInOut.transform(animation.value);
+                          final elevation = ui.lerpDouble(0, 10, animValue)!;
+                          final scale = ui.lerpDouble(1, 1.04, animValue)!;
+                          return Transform.scale(
+                            scale: scale,
+                            child: Material(
+                              elevation: elevation,
+                              color: Colors.transparent,
+                              shadowColor: Colors.black45,
+                              borderRadius: BorderRadius.circular(14),
+                              child: child,
+                            ),
+                          );
+                        },
+                        child: child,
+                      );
+                    },
+                    itemBuilder: (context, index) {
+                      final s = summaries[index];
+                      return ReorderableDelayedDragStartListener(
+                        key: ValueKey('all_book_activity_${s.book.id}'),
+                        index: index,
+                        child: Padding(
+                          padding: const EdgeInsets.only(right: 12),
+                          child: SizedBox(
+                            width: 270,
+                            child: _buildBookBarCard(context, s, maxActivity, index, summaries.length),
+                          ),
+                        ),
+                      );
+                    },
                   )
-                : Column(
-                    children: summaries
-                        .map((s) => Padding(
-                              padding: const EdgeInsets.only(bottom: 12.0),
-                              child: _buildBookBarCard(context, s, maxActivity),
-                            ))
-                        .toList(),
+                : ListView.separated(
+                    scrollDirection: Axis.horizontal,
+                    itemCount: summaries.length,
+                    separatorBuilder: (_, __) => const SizedBox(width: 12),
+                    itemBuilder: (context, index) {
+                      final s = summaries[index];
+                      return SizedBox(
+                        width: 270,
+                        child: _buildBookBarCard(context, s, maxActivity, index, summaries.length),
+                      );
+                    },
                   ),
           ),
         ],
@@ -251,13 +314,18 @@ class AllBooksHorizontalBars extends StatelessWidget {
     );
   }
 
-  Widget _buildBookBarCard(BuildContext context, BookFinancialSummary s, int maxActivity) {
+  Widget _buildBookBarCard(BuildContext context, BookFinancialSummary s, int maxActivity, int index, int totalCount) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final bookCurr = Currencies.findByCode(s.book.currency);
     final bookColor = Color(s.book.color);
 
-    final incomeFactor = (s.totalIncomeMinor / maxActivity).clamp(0.02, 1.0);
-    final expenseFactor = (s.totalExpenseMinor / maxActivity).clamp(0.02, 1.0);
+    final safeMax = maxActivity > 0 ? maxActivity : 1;
+    final incomeFactor = s.totalIncomeMinor > 0
+        ? (s.totalIncomeMinor / safeMax).clamp(0.0, 1.0)
+        : 0.0;
+    final expenseFactor = s.totalExpenseMinor > 0
+        ? (s.totalExpenseMinor / safeMax).clamp(0.0, 1.0)
+        : 0.0;
 
     return InkWell(
       onTap: () {
@@ -277,7 +345,7 @@ class AllBooksHorizontalBars extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Book Avatar + Name + Net Balance
+            // Book Avatar + Name + Net Balance + Reorder Arrows
             Row(
               children: [
                 BookAvatarWidget(
@@ -296,35 +364,55 @@ class AllBooksHorizontalBars extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
-                const SizedBox(width: 8),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: (s.currentBalanceMinor >= 0 ? AppColors.moneyIn : AppColors.moneyOut).withAlpha(18),
-                    borderRadius: BorderRadius.circular(6),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        'Net: ',
-                        style: TextStyle(
-                          fontSize: 10,
-                          fontWeight: FontWeight.w600,
-                          color: isDark ? Colors.grey[400] : Colors.grey[700],
+                const SizedBox(width: 6),
+                Flexible(
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: (s.currentBalanceMinor >= 0 ? AppColors.moneyIn : AppColors.moneyOut).withAlpha(18),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          'Net: ',
+                          style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w600,
+                            color: isDark ? Colors.grey[400] : Colors.grey[700],
+                          ),
                         ),
-                      ),
-                      ResponsiveMoneyText(
-                        minorUnits: s.currentBalanceMinor,
-                        currency: bookCurr,
-                        smart: true,
-                        color: s.currentBalanceMinor >= 0 ? AppColors.moneyIn : AppColors.moneyOut,
-                        fontSize: 11,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ],
+                        Flexible(
+                          child: ResponsiveMoneyText(
+                            minorUnits: s.currentBalanceMinor,
+                            currency: bookCurr,
+                            smart: true,
+                            color: s.currentBalanceMinor >= 0 ? AppColors.moneyIn : AppColors.moneyOut,
+                            fontSize: 11,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
+                if (totalCount > 1 && onMoveByOffset != null) ...[
+                  const SizedBox(width: 4),
+                  _buildArrowButton(
+                    icon: Icons.chevron_left_rounded,
+                    onPressed: index > 0 ? () => onMoveByOffset!(index, -1) : null,
+                    tooltip: 'Move Left',
+                    isDark: isDark,
+                  ),
+                  const SizedBox(width: 2),
+                  _buildArrowButton(
+                    icon: Icons.chevron_right_rounded,
+                    onPressed: index < totalCount - 1 ? () => onMoveByOffset!(index, 1) : null,
+                    tooltip: 'Move Right',
+                    isDark: isDark,
+                  ),
+                ],
               ],
             ),
 
@@ -378,7 +466,18 @@ class AllBooksHorizontalBars extends StatelessWidget {
         Expanded(
           child: LayoutBuilder(
             builder: (context, constraints) {
-              final barWidth = (constraints.maxWidth * factor).clamp(6.0, constraints.maxWidth);
+              final maxWidth = constraints.maxWidth;
+              if (!maxWidth.isFinite || maxWidth <= 0) {
+                return const SizedBox.shrink();
+              }
+              final validFactor = (factor.isFinite && !factor.isNaN)
+                  ? factor.clamp(0.0, 1.0)
+                  : 0.0;
+              final minBarWidth = maxWidth >= 4.0 ? 4.0 : maxWidth;
+              final barWidth = validFactor > 0
+                  ? (maxWidth * validFactor).clamp(minBarWidth, maxWidth)
+                  : 0.0;
+
               return Stack(
                 children: [
                   Container(
@@ -388,14 +487,15 @@ class AllBooksHorizontalBars extends StatelessWidget {
                       borderRadius: BorderRadius.circular(4),
                     ),
                   ),
-                  Container(
-                    width: barWidth,
-                    height: 7,
-                    decoration: BoxDecoration(
-                      color: barColor,
-                      borderRadius: BorderRadius.circular(4),
+                  if (barWidth > 0)
+                    Container(
+                      width: barWidth,
+                      height: 7,
+                      decoration: BoxDecoration(
+                        color: barColor,
+                        borderRadius: BorderRadius.circular(4),
+                      ),
                     ),
-                  ),
                 ],
               );
             },
@@ -505,4 +605,42 @@ class AllBooksHorizontalBars extends StatelessWidget {
       ],
     );
   }
+
+  Widget _buildArrowButton({
+    required IconData icon,
+    required VoidCallback? onPressed,
+    required String tooltip,
+    required bool isDark,
+  }) {
+    return Tooltip(
+      message: tooltip,
+      child: InkWell(
+        onTap: onPressed,
+        borderRadius: BorderRadius.circular(6),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 3),
+          decoration: BoxDecoration(
+            color: onPressed != null
+                ? (isDark ? Colors.white.withAlpha(20) : Colors.black.withAlpha(10))
+                : Colors.transparent,
+            borderRadius: BorderRadius.circular(6),
+            border: Border.all(
+              color: onPressed != null
+                  ? (isDark ? Colors.white24 : Colors.black12)
+                  : Colors.transparent,
+              width: 0.8,
+            ),
+          ),
+          child: Icon(
+            icon,
+            size: 13,
+            color: onPressed != null
+                ? (isDark ? Colors.white : Colors.black87)
+                : (isDark ? Colors.white24 : Colors.black26),
+          ),
+        ),
+      ),
+    );
+  }
 }
+

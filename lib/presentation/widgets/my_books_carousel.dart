@@ -1,3 +1,4 @@
+import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:hissab/core/constants/currencies.dart';
 import 'package:hissab/core/theme/app_colors.dart';
@@ -5,12 +6,14 @@ import 'package:hissab/domain/services/dashboard_summary_service.dart';
 import 'package:hissab/presentation/widgets/book_avatar_widget.dart';
 import 'package:hissab/presentation/widgets/responsive_money_text.dart';
 
-/// Horizontal carousel or responsive grid displaying all user books on the Dashboard.
+/// Horizontal carousel displaying all user books on the Dashboard with persistent drag-and-drop reordering.
 class MyBooksCarousel extends StatelessWidget {
   final List<BookFinancialSummary> summaries;
   final String? activeBookId;
   final Function(String bookId) onSelectBook;
   final VoidCallback onAddBook;
+  final Function(int oldIndex, int newIndex)? onReorder;
+  final Function(int index, int offset)? onMoveByOffset;
 
   const MyBooksCarousel({
     super.key,
@@ -18,11 +21,14 @@ class MyBooksCarousel extends StatelessWidget {
     required this.activeBookId,
     required this.onSelectBook,
     required this.onAddBook,
+    this.onReorder,
+    this.onMoveByOffset,
   });
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final canReorder = (onReorder != null || onMoveByOffset != null) && summaries.length > 1;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -30,14 +36,35 @@ class MyBooksCarousel extends StatelessWidget {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            const Row(
+            Row(
               children: [
-                Icon(Icons.auto_stories_rounded, size: 18, color: AppColors.primaryLight),
-                SizedBox(width: 8),
-                Text(
+                const Icon(Icons.auto_stories_rounded, size: 18, color: AppColors.primaryLight),
+                const SizedBox(width: 8),
+                const Text(
                   'My Books',
                   style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                 ),
+                if (canReorder) ...[
+                  const SizedBox(width: 6),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: AppColors.primaryLight.withAlpha(20),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: const Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.swap_horiz_rounded, size: 12, color: AppColors.primaryLight),
+                        SizedBox(width: 2),
+                        Text(
+                          'Arrows to Adjust',
+                          style: TextStyle(fontSize: 9.5, color: AppColors.primaryLight, fontWeight: FontWeight.w600),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ],
             ),
             TextButton.icon(
@@ -49,20 +76,69 @@ class MyBooksCarousel extends StatelessWidget {
         ),
         const SizedBox(height: 10),
         SizedBox(
-          height: 140,
-          child: ListView.separated(
-            scrollDirection: Axis.horizontal,
-            itemCount: summaries.length + 1,
-            separatorBuilder: (_, __) => const SizedBox(width: 12),
-            itemBuilder: (context, index) {
-              if (index == summaries.length) {
-                return _buildAddBookCard(context, isDark);
-              }
-              final summary = summaries[index];
-              final isActive = summary.book.id == activeBookId;
-              return _buildBookCard(context, summary, isActive, isDark);
-            },
-          ),
+          height: 152,
+          child: canReorder && onReorder != null
+              ? ReorderableListView.builder(
+                  scrollDirection: Axis.horizontal,
+                  buildDefaultDragHandles: false,
+                  itemCount: summaries.length,
+                  onReorder: (oldIndex, newIndex) {
+                    onReorder!(oldIndex, newIndex);
+                  },
+                  proxyDecorator: (child, index, animation) {
+                    return AnimatedBuilder(
+                      animation: animation,
+                      builder: (context, child) {
+                        final animValue = Curves.easeInOut.transform(animation.value);
+                        final elevation = ui.lerpDouble(0, 10, animValue)!;
+                        final scale = ui.lerpDouble(1, 1.04, animValue)!;
+                        return Transform.scale(
+                          scale: scale,
+                          child: Material(
+                            elevation: elevation,
+                            color: Colors.transparent,
+                            shadowColor: Colors.black45,
+                            borderRadius: BorderRadius.circular(16),
+                            child: child,
+                          ),
+                        );
+                      },
+                      child: child,
+                    );
+                  },
+                  footer: Padding(
+                    padding: const EdgeInsets.only(right: 12),
+                    child: _buildAddBookCard(context, isDark),
+                  ),
+                  itemBuilder: (context, index) {
+                    final summary = summaries[index];
+                    final isActive = summary.book.id == activeBookId;
+                    return ReorderableDelayedDragStartListener(
+                      key: ValueKey('my_book_${summary.book.id}'),
+                      index: index,
+                      child: Padding(
+                        padding: const EdgeInsets.only(right: 12),
+                        child: Semantics(
+                          label: 'Book ${summary.book.name}. Tap arrows to reorder.',
+                          child: _buildBookCard(context, summary, isActive, isDark, index, summaries.length),
+                        ),
+                      ),
+                    );
+                  },
+                )
+              : ListView.separated(
+                  scrollDirection: Axis.horizontal,
+                  itemCount: summaries.length + 1,
+                  separatorBuilder: (_, __) => const SizedBox(width: 12),
+                  itemBuilder: (context, index) {
+                    if (index == summaries.length) {
+                      return _buildAddBookCard(context, isDark);
+                    }
+                    final summary = summaries[index];
+                    final isActive = summary.book.id == activeBookId;
+                    return _buildBookCard(context, summary, isActive, isDark, index, summaries.length);
+                  },
+                ),
         ),
       ],
     );
@@ -73,6 +149,8 @@ class MyBooksCarousel extends StatelessWidget {
     BookFinancialSummary summary,
     bool isActive,
     bool isDark,
+    int index,
+    int totalCount,
   ) {
     final book = summary.book;
     final bookColor = Color(book.color);
@@ -83,7 +161,7 @@ class MyBooksCarousel extends StatelessWidget {
       borderRadius: BorderRadius.circular(16),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
-        width: 190,
+        width: 200,
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
           color: isDark ? AppColors.darkCard : Colors.white,
@@ -106,14 +184,14 @@ class MyBooksCarousel extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            // Top Row: Avatar + Book Name + Active Indicator
+            // Top Row: Avatar + Book Name + Active Indicator + Reorder Arrows
             Row(
               children: [
                 BookAvatarWidget(
                   bookName: book.name,
                   bookColor: book.color,
                   logo: book.logo,
-                  size: 32,
+                  size: 30,
                   borderRadius: 8,
                 ),
                 const SizedBox(width: 8),
@@ -134,7 +212,7 @@ class MyBooksCarousel extends StatelessWidget {
                     ],
                   ),
                 ),
-                if (isActive)
+                if (isActive) ...[
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
                     decoration: BoxDecoration(
@@ -144,12 +222,29 @@ class MyBooksCarousel extends StatelessWidget {
                     child: Text(
                       'ACTIVE',
                       style: TextStyle(
-                        fontSize: 9,
+                        fontSize: 8.5,
                         fontWeight: FontWeight.bold,
                         color: bookColor,
                       ),
                     ),
                   ),
+                  const SizedBox(width: 4),
+                ],
+                if (totalCount > 1 && onMoveByOffset != null) ...[
+                  _buildArrowButton(
+                    icon: Icons.chevron_left_rounded,
+                    onPressed: index > 0 ? () => onMoveByOffset!(index, -1) : null,
+                    tooltip: 'Move Left',
+                    isDark: isDark,
+                  ),
+                  const SizedBox(width: 2),
+                  _buildArrowButton(
+                    icon: Icons.chevron_right_rounded,
+                    onPressed: index < totalCount - 1 ? () => onMoveByOffset!(index, 1) : null,
+                    tooltip: 'Move Right',
+                    isDark: isDark,
+                  ),
+                ],
               ],
             ),
 
@@ -257,4 +352,42 @@ class MyBooksCarousel extends StatelessWidget {
       ),
     );
   }
+
+  Widget _buildArrowButton({
+    required IconData icon,
+    required VoidCallback? onPressed,
+    required String tooltip,
+    required bool isDark,
+  }) {
+    return Tooltip(
+      message: tooltip,
+      child: InkWell(
+        onTap: onPressed,
+        borderRadius: BorderRadius.circular(6),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 3),
+          decoration: BoxDecoration(
+            color: onPressed != null
+                ? (isDark ? Colors.white.withAlpha(20) : Colors.black.withAlpha(10))
+                : Colors.transparent,
+            borderRadius: BorderRadius.circular(6),
+            border: Border.all(
+              color: onPressed != null
+                  ? (isDark ? Colors.white24 : Colors.black12)
+                  : Colors.transparent,
+              width: 0.8,
+            ),
+          ),
+          child: Icon(
+            icon,
+            size: 13,
+            color: onPressed != null
+                ? (isDark ? Colors.white : Colors.black87)
+                : (isDark ? Colors.white24 : Colors.black26),
+          ),
+        ),
+      ),
+    );
+  }
 }
+

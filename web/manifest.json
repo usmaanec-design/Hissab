@@ -1,11 +1,12 @@
 {
     "name": "Hissab CashBook",
     "short_name": "Hissab",
-    "start_url": ".",
+    "description": "Hissab CashBook is a simple and professional cash book and expense management application.",
+    "start_url": "/app",
+    "scope": "/app",
     "display": "standalone",
     "background_color": "#0F172A",
     "theme_color": "#0F172A",
-    "description": "Professional CashBook & Ledger application.",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

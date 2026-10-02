@@ -1,17 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:share_plus/share_plus.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import 'package:hissab/core/constants/app_assets.dart';
 import 'package:hissab/core/constants/currencies.dart';
+import 'package:hissab/core/localization/app_localizations.dart';
 import 'package:hissab/core/security/security_service.dart';
 import 'package:hissab/core/theme/app_colors.dart';
 import 'package:hissab/core/utils/currency_formatter.dart';
-import 'package:hissab/data/repositories/backup_repository.dart';
 import 'package:hissab/presentation/controllers/app_controller.dart';
 import 'package:hissab/presentation/controllers/book_controller.dart';
 import 'package:hissab/presentation/controllers/transaction_controller.dart';
 import 'audit_logs_screen.dart';
+import 'contact_us_screen.dart';
+import 'privacy_policy_screen.dart';
+import 'terms_screen.dart';
+import 'widgets/cloud_backup_section.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
@@ -203,100 +207,10 @@ class SettingsScreen extends StatelessWidget {
     );
   }
 
-  void _exportDatabaseJson(BuildContext context) async {
-    final repo = BackupRepository();
-    final json = await repo.exportCompleteJsonBackup();
-
-    await SharePlus.instance.share(
-      ShareParams(
-        text: json,
-        subject: 'Hissab Database JSON Backup - ${DateTime.now().toIso8601String()}',
-      ),
-    );
-  }
-
-  void _restoreDatabaseJson(BuildContext context) {
-    final jsonInputController = TextEditingController();
-
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Restore Database Backup'),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                'Paste your exported Hissab JSON backup here. WARNING: Restoring will overwrite existing records with the backup data.',
-                style: TextStyle(fontSize: 12, color: Colors.grey),
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: jsonInputController,
-                maxLines: 6,
-                decoration: const InputDecoration(
-                  hintText: 'Paste JSON content here...',
-                  border: OutlineInputBorder(),
-                ),
-              ),
-            ],
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.moneyOut,
-              foregroundColor: Colors.white,
-            ),
-            onPressed: () async {
-              final text = jsonInputController.text.trim();
-              if (text.isEmpty) return;
-
-              final repo = BackupRepository();
-              final bookCtrl = context.read<BookController>();
-              final txCtrl = context.read<TransactionController>();
-              final messenger = ScaffoldMessenger.of(context);
-              final nav = Navigator.of(ctx);
-
-              final success = await repo.restoreCompleteJsonBackup(text);
-              nav.pop();
-
-              if (success) {
-                await bookCtrl.loadBooks();
-                final active = bookCtrl.activeBook;
-                if (active != null) {
-                  await txCtrl.loadForBook(active);
-                }
-                messenger.showSnackBar(
-                  const SnackBar(
-                    content: Text('Database restored successfully!'),
-                    backgroundColor: AppColors.moneyIn,
-                  ),
-                );
-              } else {
-                messenger.showSnackBar(
-                  const SnackBar(
-                    content: Text('Invalid backup JSON format or corrupted file.'),
-                    backgroundColor: AppColors.moneyOut,
-                  ),
-                );
-              }
-            },
-            child: const Text('Confirm Restore'),
-          ),
-        ],
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final appController = context.watch<AppController>();
+    final loc = AppLocalizations.of(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
@@ -306,6 +220,60 @@ class SettingsScreen extends StatelessWidget {
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
+          // Top Center Prominent Logo & App Identity Header
+          Center(
+            child: Column(
+              children: [
+                const SizedBox(height: 6),
+                Container(
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(24),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: isDark ? 0.4 : 0.14),
+                        blurRadius: 20,
+                        offset: const Offset(0, 6),
+                      ),
+                    ],
+                  ),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(24),
+                    child: Image.asset(
+                      AppAssets.logo,
+                      width: 110,
+                      height: 110,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) => Image.asset(
+                        AppAssets.logoAlias,
+                        width: 110,
+                        height: 110,
+                        fit: BoxFit.cover,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                const Text(
+                  'Hissab',
+                  style: TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: -0.5,
+                  ),
+                ),
+                Text(
+                  'CashBook & Financial Ledger',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                    color: isDark ? Colors.grey[400] : Colors.grey[600],
+                  ),
+                ),
+                const SizedBox(height: 20),
+              ],
+            ),
+          ),
+
           // Preferences Section
           const Text('Preferences', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.grey)),
           const SizedBox(height: 8),
@@ -314,7 +282,7 @@ class SettingsScreen extends StatelessWidget {
             children: [
               ListTile(
                 leading: const Icon(Icons.language_outlined, color: AppColors.primaryLight),
-                title: const Text('Language & Localization'),
+                title: Text(loc.translate('settings.language')),
                 subtitle: Text(appController.locale.languageCode == 'ar'
                     ? 'العربية (Arabic - RTL)'
                     : (appController.locale.languageCode == 'ur' ? 'اردو (Urdu - RTL)' : 'English (LTR)')),
@@ -324,7 +292,7 @@ class SettingsScreen extends StatelessWidget {
               const Divider(height: 1),
               ListTile(
                 leading: const Icon(Icons.palette_outlined, color: AppColors.primaryLight),
-                title: const Text('Appearance & Theme'),
+                title: Text(loc.translate('settings.theme')),
                 subtitle: Text(appController.themeMode == ThemeMode.dark
                     ? 'Dark Mode'
                     : (appController.themeMode == ThemeMode.light ? 'Light Mode' : 'System Default')),
@@ -334,17 +302,24 @@ class SettingsScreen extends StatelessWidget {
             ],
           ),
 
-          const SizedBox(height: 20),
+          const SizedBox(height: 22),
 
-          // Security & Audit Section
-          const Text('Security & Integrity', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.grey)),
+          // 2. Account Section (Google Cloud Backup & Restore, Security, Audit)
+          Text(loc.translate('settings.account_section'),
+              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.grey)),
           const SizedBox(height: 8),
+
+          // Google Cloud Backup Section (Maintained)
+          const CloudBackupSection(),
+
+          const SizedBox(height: 12),
+
           _buildSettingsCard(
             isDark: isDark,
             children: [
               ListTile(
                 leading: const Icon(Icons.security_outlined, color: AppColors.accent),
-                title: const Text('App Security PIN Lock'),
+                title: Text(loc.translate('settings.security')),
                 subtitle: Text(appController.isPinProtected ? 'Activated (Secured)' : 'Disabled'),
                 trailing: const Icon(Icons.chevron_right),
                 onTap: () => _showPinDialog(context),
@@ -352,7 +327,7 @@ class SettingsScreen extends StatelessWidget {
               const Divider(height: 1),
               ListTile(
                 leading: const Icon(Icons.verified_outlined, color: AppColors.moneyIn),
-                title: const Text('Audit Ledger & Reconciliation'),
+                title: Text(loc.translate('settings.reconcile')),
                 subtitle: const Text('Verify 100% calculation integrity against transactions journal'),
                 trailing: const Icon(Icons.chevron_right),
                 onTap: () => _runReconciliation(context),
@@ -360,7 +335,7 @@ class SettingsScreen extends StatelessWidget {
               const Divider(height: 1),
               ListTile(
                 leading: const Icon(Icons.history_outlined, color: AppColors.primaryLight),
-                title: const Text('Audit Trail & Event Log'),
+                title: Text(loc.translate('settings.audit_log')),
                 subtitle: const Text('View history of all creates, updates, and deletes'),
                 trailing: const Icon(Icons.chevron_right),
                 onTap: () {
@@ -373,36 +348,74 @@ class SettingsScreen extends StatelessWidget {
             ],
           ),
 
-          const SizedBox(height: 20),
+          const SizedBox(height: 22),
 
-          // Backup & Restore Section
-          const Text('Backup & Data', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.grey)),
+          // 3. Information Section (Privacy Policy, Terms, Contact Us, Website)
+          Text(loc.translate('settings.info_section'),
+              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.grey)),
           const SizedBox(height: 8),
           _buildSettingsCard(
             isDark: isDark,
             children: [
               ListTile(
-                leading: const Icon(Icons.cloud_upload_outlined, color: AppColors.primaryLight),
-                title: const Text('Backup Full Database (JSON)'),
-                subtitle: const Text('Export complete structured database with all books & parties'),
+                leading: const Icon(Icons.privacy_tip_outlined, color: Color(0xFF10B981)),
+                title: Text(loc.translate('settings.privacy_policy')),
+                subtitle: const Text('Data protection, offline storage & Drive scopes'),
                 trailing: const Icon(Icons.chevron_right),
-                onTap: () => _exportDatabaseJson(context),
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const PrivacyPolicyScreen()),
+                  );
+                },
               ),
               const Divider(height: 1),
               ListTile(
-                leading: const Icon(Icons.settings_backup_restore_outlined, color: AppColors.moneyOut),
-                title: const Text('Restore Database from Backup'),
-                subtitle: const Text('Import and restore all books, transactions, and settings'),
+                leading: const Icon(Icons.description_outlined, color: Color(0xFF3B82F6)),
+                title: Text(loc.translate('settings.terms_conditions')),
+                subtitle: const Text('Terms of service, guidelines & user agreement'),
                 trailing: const Icon(Icons.chevron_right),
-                onTap: () => _restoreDatabaseJson(context),
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const TermsScreen()),
+                  );
+                },
+              ),
+              const Divider(height: 1),
+              ListTile(
+                leading: const Icon(Icons.support_agent_rounded, color: Color(0xFF25D366)),
+                title: Text(loc.translate('settings.contact_us')),
+                subtitle: const Text('Chat on WhatsApp (+966 50 376 3410) & Support'),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const ContactUsScreen()),
+                  );
+                },
+              ),
+              const Divider(height: 1),
+              ListTile(
+                leading: const Icon(Icons.language_rounded, color: AppColors.primaryLight),
+                title: Text(loc.translate('settings.hissab_website')),
+                subtitle: const Text('https://hamarahissab.web.app'),
+                trailing: const Icon(Icons.open_in_new_rounded, size: 18),
+                onTap: () async {
+                  final uri = Uri.parse('https://hamarahissab.web.app/');
+                  if (await canLaunchUrl(uri)) {
+                    await launchUrl(uri, mode: LaunchMode.externalApplication);
+                  }
+                },
               ),
             ],
           ),
 
-          const SizedBox(height: 20),
+          const SizedBox(height: 22),
 
-          // About Section
-          const Text('About', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.grey)),
+          // 4. About Section
+          Text(loc.translate('settings.about_section'),
+              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.grey)),
           const SizedBox(height: 8),
           _buildSettingsCard(
             isDark: isDark,
@@ -412,22 +425,24 @@ class SettingsScreen extends StatelessWidget {
                   borderRadius: BorderRadius.circular(10),
                   child: Image.asset(
                     AppAssets.logo,
-                    width: 40,
-                    height: 40,
+                    width: 42,
+                    height: 42,
                     fit: BoxFit.contain,
                     errorBuilder: (_, __, ___) => Image.asset(
                       AppAssets.logoAlias,
-                      width: 40,
-                      height: 40,
+                      width: 42,
+                      height: 42,
                       fit: BoxFit.contain,
                     ),
                   ),
                 ),
-                title: const Text('Hissab CashBook & Ledger'),
-                subtitle: const Text('Version 1.0.0 • Offline-First & Deterministic Accounting'),
+                title: const Text('Hissab CashBook & Ledger', style: TextStyle(fontWeight: FontWeight.bold)),
+                subtitle: const Text('Version 1.0.0 • Offline-First Deterministic Accounting\nDeveloper: Muhammad Usman'),
               ),
             ],
           ),
+
+          const SizedBox(height: 30),
         ],
       ),
     );

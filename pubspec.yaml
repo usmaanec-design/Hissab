@@ -55,6 +55,14 @@ dependencies:
   sqflite_common_ffi_web: ^1.0.1+1
   speech_to_text: ^7.4.0
   flutter_contacts: ^2.1.0
+  google_sign_in: ^7.2.0
+  google_sign_in_web: ^1.1.0
+  googleapis: ^15.0.0
+  extension_google_sign_in_as_googleapis_auth: ^3.0.0
+  encrypt: ^5.0.3
+  http: ^1.6.0
+  archive: ^4.0.9
+  url_launcher: ^6.3.2
 
 dev_dependencies:
   flutter_test:

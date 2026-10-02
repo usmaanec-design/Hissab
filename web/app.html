@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <base href="/">
+  <meta charset="UTF-8">
+  <meta content="IE=Edge" http-equiv="X-UA-Compatible">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Hissab - Smart CashBook & Personal Business Accounting Web Application">
+
+  <!-- iOS meta tags & icons -->
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <meta name="apple-mobile-web-app-title" content="Hissab">
+  <link rel="apple-touch-icon" href="icons/Icon-192.png">
+
+  <!-- Favicon -->
+  <link rel="icon" type="image/png" href="favicon.png"/>
+
+  <!-- Google Sign-In Web Client ID -->
+  <meta name="google-signin-client_id" content="789722583176-81gt15ltbeehqfcah7pdmb5b7p3o47r5.apps.googleusercontent.com">
+
+  <title>Hissab - Web Application</title>
+  <link rel="manifest" href="/manifest.json">
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      background-color: #0F172A;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      overflow: hidden;
+      color: #F8FAFC;
+    }
+    .loading-container {
+      text-align: center;
+    }
+    .loading-logo {
+      width: 80px;
+      height: 80px;
+      border-radius: 20px;
+      margin-bottom: 20px;
+      box-shadow: 0 10px 25px rgba(13, 128, 101, 0.3);
+      animation: pulse 2s infinite ease-in-out;
+    }
+    .spinner {
+      width: 36px;
+      height: 36px;
+      border: 3px solid rgba(255, 255, 255, 0.1);
+      border-top-color: #10B981;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin: 0 auto 16px auto;
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); opacity: 1; }
+      50% { transform: scale(1.05); opacity: 0.9; }
+    }
+  </style>
+</head>
+<body>
+  <div class="loading-container" id="app-loading">
+    <img src="hissab_logo_120.png" alt="Hissab" class="loading-logo">
+    <div class="spinner"></div>
+    <div style="font-weight: 600; font-size: 16px; letter-spacing: 0.5px;">Launching Hissab CashBook...</div>
+    <div style="font-size: 13px; color: #94A3B8; margin-top: 6px;">Initializing SQLite & secure offline storage</div>
+  </div>
+  <script src="flutter_bootstrap.js" async></script>
+</body>
+</html>

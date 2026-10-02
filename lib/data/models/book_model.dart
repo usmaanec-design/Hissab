@@ -6,6 +6,7 @@ class BookModel {
   final String openingBalanceDate;
   final int color; // ARGB int, e.g. 0xFF2563EB
   final String? logo; // Local file path or base64 data URL
+  final int displayOrder; // Persistent manual ordering
   final bool isArchived;
   final bool isDeleted;
   final String createdAt;
@@ -19,6 +20,7 @@ class BookModel {
     required this.openingBalanceDate,
     this.color = 0xFF2563EB, // Default Sapphire Blue
     this.logo,
+    this.displayOrder = 0,
     this.isArchived = false,
     this.isDeleted = false,
     required this.createdAt,
@@ -34,6 +36,7 @@ class BookModel {
       'opening_balance_date': openingBalanceDate,
       'color': color,
       'logo': logo,
+      'display_order': displayOrder,
       'is_archived': isArchived ? 1 : 0,
       'is_deleted': isDeleted ? 1 : 0,
       'created_at': createdAt,
@@ -50,6 +53,7 @@ class BookModel {
       openingBalanceDate: map['opening_balance_date'] as String,
       color: map['color'] as int? ?? 0xFF2563EB,
       logo: map['logo'] as String?,
+      displayOrder: (map['display_order'] as num?)?.toInt() ?? 0,
       isArchived: (map['is_archived'] as int? ?? 0) == 1,
       isDeleted: (map['is_deleted'] as int? ?? 0) == 1,
       createdAt: map['created_at'] as String,
@@ -65,6 +69,7 @@ class BookModel {
     String? openingBalanceDate,
     int? color,
     String? logo,
+    int? displayOrder,
     bool? isArchived,
     bool? isDeleted,
     String? updatedAt,
@@ -77,6 +82,7 @@ class BookModel {
       openingBalanceDate: openingBalanceDate ?? this.openingBalanceDate,
       color: color ?? this.color,
       logo: logo ?? this.logo,
+      displayOrder: displayOrder ?? this.displayOrder,
       isArchived: isArchived ?? this.isArchived,
       isDeleted: isDeleted ?? this.isDeleted,
       createdAt: createdAt,

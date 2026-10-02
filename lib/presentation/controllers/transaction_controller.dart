@@ -7,6 +7,8 @@ import 'package:hissab/domain/accounting/accounting_engine.dart';
 import 'package:hissab/domain/accounting/balance_reconciliation.dart';
 
 class TransactionController extends ChangeNotifier {
+  static VoidCallback? onDataChanged;
+
   final TransactionRepository _transactionRepository = TransactionRepository();
 
   List<TransactionModel> _transactions = [];
@@ -97,21 +99,25 @@ class TransactionController extends ChangeNotifier {
   Future<void> addTransaction(TransactionModel tx, BookModel book) async {
     await _transactionRepository.addTransaction(tx);
     await loadForBook(book);
+    onDataChanged?.call();
   }
 
   Future<void> updateTransaction(TransactionModel tx, BookModel book) async {
     await _transactionRepository.updateTransaction(tx);
     await loadForBook(book);
+    onDataChanged?.call();
   }
 
   Future<void> deleteTransaction(String txId, BookModel book) async {
     await _transactionRepository.softDeleteTransaction(txId, book.id);
     await loadForBook(book);
+    onDataChanged?.call();
   }
 
   Future<void> restoreTransaction(String txId, BookModel book) async {
     await _transactionRepository.restoreTransaction(txId, book.id);
     await loadForBook(book);
+    onDataChanged?.call();
   }
 
   Future<void> transfer({
@@ -133,6 +139,7 @@ class TransactionController extends ChangeNotifier {
       description: description,
     );
     await loadForBook(book);
+    onDataChanged?.call();
   }
 
   Future<void> applyFilter(TransactionFilter filter, BookModel book) async {

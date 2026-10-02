@@ -4,11 +4,13 @@ import 'package:hissab/core/theme/app_colors.dart';
 class QuickActionBar extends StatelessWidget {
   final VoidCallback onMoneyIn;
   final VoidCallback onMoneyOut;
+  final VoidCallback? onAddNote;
 
   const QuickActionBar({
     super.key,
     required this.onMoneyIn,
     required this.onMoneyOut,
+    this.onAddNote,
   });
 
   @override
@@ -44,17 +46,47 @@ class QuickActionBar extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Icon(Icons.add_circle_outline, size: 20),
-                    SizedBox(width: 8),
+                    SizedBox(width: 6),
                     Text(
-                      'Money In (+)',
-                      style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+                      'Money In',
+                      style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
                     ),
                   ],
                 ),
                 onPressed: onMoneyIn,
               ),
             ),
-            const SizedBox(width: 12),
+            if (onAddNote != null) ...[
+              const SizedBox(width: 8),
+              Tooltip(
+                message: 'Add Udhar Note / ادھار ڈائری',
+                child: InkWell(
+                  onTap: onAddNote,
+                  borderRadius: BorderRadius.circular(14),
+                  child: Container(
+                    height: 50,
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF59E0B).withAlpha(25),
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(color: const Color(0xFFF59E0B), width: 1.5),
+                    ),
+                    child: const Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.edit_note_rounded, color: Color(0xFFD97706), size: 22),
+                        Text(
+                          'Add Note',
+                          style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFFD97706)),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+            ] else
+              const SizedBox(width: 12),
 
             // Money Out Button
             Expanded(
@@ -71,10 +103,10 @@ class QuickActionBar extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Icon(Icons.remove_circle_outline, size: 20),
-                    SizedBox(width: 8),
+                    SizedBox(width: 6),
                     Text(
-                      'Money Out (-)',
-                      style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+                      'Money Out',
+                      style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
                     ),
                   ],
                 ),

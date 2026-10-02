@@ -47,3 +47,7 @@ app.*.map.json
 # Package outputs
 *.apk
 *.aab
+
+# Local cache & Store packaging assets
+.firebase/
+FOR MICROSOFT UPLODING REQUIRED THINGS/

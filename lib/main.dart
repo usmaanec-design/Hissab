@@ -12,6 +12,8 @@ import 'presentation/controllers/category_controller.dart';
 import 'presentation/controllers/party_controller.dart';
 import 'presentation/controllers/transaction_controller.dart';
 import 'presentation/screens/home/main_scaffold.dart';
+import 'core/services/google_auth_service.dart';
+import 'presentation/controllers/cloud_backup_controller.dart';
 import 'presentation/screens/onboarding/onboarding_screen.dart';
 import 'presentation/screens/security/pin_lock_screen.dart';
 
@@ -20,6 +22,9 @@ void main() async {
 
   // Centralized, platform-isolated SQLite database initialization
   await DatabasePlatform.initialize();
+
+  // Centralized Google Auth service initialization (ensures initialized once on startup)
+  await GoogleAuthService().ensureInitialized();
 
   runApp(const HissabApp());
 }
@@ -37,6 +42,7 @@ class HissabApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => PartyController()),
         ChangeNotifierProvider(create: (_) => CategoryController()),
         ChangeNotifierProvider(create: (_) => AccountController()),
+        ChangeNotifierProvider(create: (_) => CloudBackupController()),
       ],
       child: const _HissabAppView(),
     );
@@ -62,13 +68,19 @@ class _HissabAppViewState extends State<_HissabAppView> {
   Future<void> _bootstrapApp() async {
     final appController = context.read<AppController>();
     final bookController = context.read<BookController>();
+    final backupController = context.read<CloudBackupController>();
 
     final txController = context.read<TransactionController>();
     final partyController = context.read<PartyController>();
     final catController = context.read<CategoryController>();
     final accController = context.read<AccountController>();
 
+    TransactionController.onDataChanged = () {
+      backupController.onDataChanged();
+    };
+
     await appController.initialize();
+    await backupController.initialize();
     await bookController.loadBooks(preferredActiveBookId: appController.activeBookId);
 
     final activeBook = bookController.activeBook;

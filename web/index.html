@@ -1,38 +1,860 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <!--
-    If you are serving your web app in a path other than the root, change the
-    href value below to reflect the base path you are serving from.
-
-    The path provided below has to start and end with a slash "/" in order for
-    it to work correctly.
-
-    For more details:
-    * https://developer.mozilla.org/en-US/docs/Web/HTML/Element/base
-
-    This is a placeholder for base href that will be replaced by the value of
-    the `--base-href` argument provided to `flutter build`.
-  -->
-  <base href="$FLUTTER_BASE_HREF">
-
   <meta charset="UTF-8">
-  <meta content="IE=Edge" http-equiv="X-UA-Compatible">
-  <meta name="description" content="A new Flutter project.">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Hissab - Smart CashBook &amp; Personal Business Accounting</title>
+  
+  <meta name="description" content="Hissab is an offline-first smart CashBook and ledger app for personal and small business accounting. Track cash flow, manage multiple books, generate PDF statements, and backup securely to your private Google Drive with AES-256 encryption.">
+  <meta name="keywords" content="Hissab, CashBook, Ledger, Khata, Accounting App, Cash In Cash Out, Google Drive Backup, Offline Accounting, Udhar Book">
+  <meta name="theme-color" content="#0D8065">
+  <meta name="google-site-verification" content="googled1225bd8e35a1b5c" />
+  <meta name="google-site-verification" content="d1225bd8e35a1b5c" />
 
-  <!-- iOS meta tags & icons -->
-  <meta name="mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black">
-  <meta name="apple-mobile-web-app-title" content="Hissab">
-  <link rel="apple-touch-icon" href="icons/Icon-192.png">
+  <!-- Open Graph / Facebook -->
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://hamarahissab.web.app/">
+  <meta property="og:title" content="Hissab - Smart CashBook &amp; Personal Business Accounting">
+  <meta property="og:description" content="Track income &amp; expenses, manage multiple cashbooks, generate reports, and backup privately to your own Google Drive. 100% offline-first.">
+  <meta property="og:image" content="https://hamarahissab.web.app/hissab_logo_120.png">
 
-  <!-- Favicon -->
+  <!-- Twitter -->
+  <meta property="twitter:card" content="summary_large_image">
+  <meta property="twitter:url" content="https://hamarahissab.web.app/">
+  <meta property="twitter:title" content="Hissab - Smart CashBook &amp; Accounting">
+  <meta property="twitter:description" content="Offline-first personal &amp; small business ledger with private Google Drive backup.">
+  <meta property="twitter:image" content="https://hamarahissab.web.app/hissab_logo_120.png">
+
   <link rel="icon" type="image/png" href="favicon.png"/>
+  <link rel="apple-touch-icon" href="icons/Icon-192.png">
+  <link rel="manifest" href="/manifest.json">
+  <link rel="canonical" href="https://hamarahissab.web.app/">
 
-  <title>Hissab - CashBook & Ledger</title>
-  <link rel="manifest" href="manifest.json">
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+
+  <style>
+    /* Specific Home Page Light Styles */
+    .hero {
+      padding: 4.5rem 0 3rem 0;
+      text-align: center;
+      background: radial-gradient(circle at 50% 20%, rgba(16, 185, 129, 0.08) 0%, rgba(248, 250, 252, 0) 70%);
+    }
+
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: #ECFDF5;
+      border: 1px solid #A7F3D0;
+      padding: 0.4rem 1.1rem;
+      border-radius: 50px;
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: #065F46;
+      margin-bottom: 2rem;
+    }
+
+    .logo-hero-container {
+      position: relative;
+      width: 140px;
+      height: 140px;
+      margin: 0 auto 2.5rem auto;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .logo-ring {
+      position: absolute;
+      inset: -10px;
+      border-radius: 36px;
+      background: linear-gradient(135deg, rgba(16, 185, 129, 0.4), rgba(37, 99, 235, 0.25), rgba(16, 185, 129, 0.3));
+      animation: rotateRing 8s linear infinite;
+      filter: blur(8px);
+    }
+
+    @keyframes rotateRing {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    .logo-hero-img {
+      position: relative;
+      width: 120px;
+      height: 120px;
+      border-radius: 28px;
+      box-shadow: 0 16px 36px rgba(13, 128, 101, 0.22);
+      z-index: 2;
+      animation: floatLogo 4s ease-in-out infinite;
+    }
+
+    @keyframes floatLogo {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-8px); }
+    }
+
+    .hero-title {
+      font-family: 'Outfit', sans-serif;
+      font-size: 3.5rem;
+      font-weight: 800;
+      line-height: 1.18;
+      letter-spacing: -1.5px;
+      margin-bottom: 1.25rem;
+      max-width: 900px;
+      margin-left: auto;
+      margin-right: auto;
+      color: #0F172A;
+    }
+
+    .hero-title span.gradient {
+      background: linear-gradient(135deg, #0D8065 0%, #10B981 50%, #2563EB 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .hero-sub {
+      font-size: 1.15rem;
+      color: var(--text-muted);
+      max-width: 740px;
+      margin: 0 auto 2.5rem auto;
+      line-height: 1.7;
+    }
+
+    .hero-cta {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 1rem;
+      flex-wrap: wrap;
+      margin-bottom: 2.5rem;
+    }
+
+    .hero-cta .btn {
+      padding: 0.85rem 1.8rem;
+      font-size: 1rem;
+      border-radius: 12px;
+    }
+
+    .hero-highlights {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 1.5rem;
+      flex-wrap: wrap;
+      font-size: 0.9rem;
+      color: var(--text-sub);
+      font-weight: 600;
+    }
+
+    /* Screenshots Showcase */
+    .screenshots-showcase {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 2rem;
+      margin-top: 3.5rem;
+    }
+
+    .screenshot-card {
+      background: var(--surface);
+      border: 1px solid var(--card-border);
+      border-radius: 20px;
+      padding: 1.25rem;
+      box-shadow: var(--shadow-md);
+      transition: all 0.3s ease;
+      text-align: center;
+    }
+
+    .screenshot-card:hover {
+      transform: translateY(-6px);
+      box-shadow: var(--shadow-lg);
+      border-color: #CBD5E1;
+    }
+
+    .screenshot-card img {
+      width: 100%;
+      height: auto;
+      border-radius: 14px;
+      border: 1px solid var(--card-border);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+      margin-bottom: 1rem;
+    }
+
+    .screenshot-card h4 {
+      font-family: 'Outfit', sans-serif;
+      font-size: 1.2rem;
+      font-weight: 700;
+      color: #0F172A;
+      margin-bottom: 0.35rem;
+    }
+
+    .screenshot-card p {
+      font-size: 0.88rem;
+      color: var(--text-muted);
+    }
+
+    /* Features Grid */
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 1.5rem;
+    }
+
+    .feature-card {
+      background: var(--surface);
+      border: 1px solid var(--card-border);
+      border-radius: 16px;
+      padding: 1.75rem;
+      transition: all 0.3s ease;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .feature-card:hover {
+      transform: translateY(-4px);
+      border-color: rgba(16, 185, 129, 0.4);
+      box-shadow: var(--shadow-md);
+    }
+
+    .feature-icon {
+      width: 48px;
+      height: 48px;
+      border-radius: 12px;
+      background: #ECFDF5;
+      color: var(--primary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.5rem;
+      margin-bottom: 1.25rem;
+    }
+
+    .feature-card h3 {
+      font-size: 1.15rem;
+      font-weight: 700;
+      margin-bottom: 0.5rem;
+      color: #0F172A;
+    }
+
+    .feature-card p {
+      font-size: 0.92rem;
+      color: var(--text-muted);
+      line-height: 1.6;
+    }
+
+    /* Highlight Banner Cards */
+    .banner-card {
+      background: var(--surface);
+      border: 1px solid var(--card-border);
+      border-radius: 24px;
+      padding: 3rem;
+      margin: 3rem 0;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 3rem;
+      align-items: center;
+      box-shadow: var(--shadow-md);
+    }
+
+    .banner-content h3 {
+      font-family: 'Outfit', sans-serif;
+      font-size: 2.1rem;
+      font-weight: 800;
+      margin-bottom: 1rem;
+      color: #0F172A;
+    }
+
+    .banner-content p {
+      color: var(--text-muted);
+      margin-bottom: 1.5rem;
+      font-size: 1.05rem;
+    }
+
+    .check-list {
+      list-style: none;
+    }
+
+    .check-list li {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      margin-bottom: 0.85rem;
+      font-size: 0.95rem;
+      color: var(--text-sub);
+    }
+
+    .check-list li span.icon {
+      color: var(--primary-light);
+      font-weight: bold;
+    }
+
+    .security-badge-box {
+      background: #F8FAFC;
+      border: 1px solid var(--card-border);
+      border-radius: 18px;
+      padding: 2.25rem;
+      text-align: center;
+    }
+
+    /* Steps */
+    .steps-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 1.5rem;
+    }
+
+    .step-card {
+      background: var(--surface);
+      border: 1px solid var(--card-border);
+      border-radius: 16px;
+      padding: 2rem 1.5rem;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .step-num {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #10B981, #0D8065);
+      color: white;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.95rem;
+      margin-bottom: 1.25rem;
+    }
+
+    .step-card h4 {
+      font-size: 1.1rem;
+      font-weight: 700;
+      margin-bottom: 0.5rem;
+      color: #0F172A;
+    }
+
+    .step-card p {
+      font-size: 0.9rem;
+      color: var(--text-muted);
+    }
+
+    /* FAQ */
+    .faq-container {
+      max-width: 820px;
+      margin: 0 auto;
+    }
+
+    .faq-item {
+      background: var(--surface);
+      border: 1px solid var(--card-border);
+      border-radius: 14px;
+      margin-bottom: 1rem;
+      overflow: hidden;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .faq-question {
+      padding: 1.25rem 1.5rem;
+      font-weight: 700;
+      font-size: 1.05rem;
+      color: #0F172A;
+      cursor: pointer;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      user-select: none;
+    }
+
+    .faq-question:hover {
+      color: var(--primary);
+    }
+
+    .faq-answer {
+      padding: 0 1.5rem 1.25rem 1.5rem;
+      color: var(--text-muted);
+      font-size: 0.95rem;
+      line-height: 1.6;
+    }
+
+    /* Direct Contact Banner */
+    .whatsapp-banner {
+      background: linear-gradient(135deg, #ECFDF5 0%, #EFF6FF 100%);
+      border: 1px solid #A7F3D0;
+      border-radius: 20px;
+      padding: 2.5rem;
+      text-align: center;
+      margin-top: 4rem;
+    }
+
+    .whatsapp-banner h3 {
+      font-family: 'Outfit', sans-serif;
+      font-size: 1.85rem;
+      color: #0F172A;
+      margin-bottom: 0.75rem;
+    }
+
+    .whatsapp-banner p {
+      color: var(--text-muted);
+      max-width: 600px;
+      margin: 0 auto 1.5rem auto;
+      font-size: 1.05rem;
+    }
+
+    @media (max-width: 900px) {
+      .hero-title { font-size: 2.6rem; }
+      .banner-card { grid-template-columns: 1fr; }
+    }
+  </style>
 </head>
 <body>
-  <script src="flutter_bootstrap.js" async></script>
+
+  <!-- Floating WhatsApp Button (Active 24/7 on all pages) -->
+  <a href="https://wa.me/966503763410?text=Hello%20Hissab%20Support" class="floating-whatsapp" target="_blank" rel="noopener noreferrer" title="Chat on WhatsApp (+966503763410)">
+    <svg viewBox="0 0 24 24">
+      <path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.019 3.287l-.711 2.598 2.664-.699c.97.531 1.83.814 2.8.814 3.18 0 5.766-2.587 5.767-5.766.001-3.18-2.585-5.766-5.771-5.766zm8.47 5.766c-.002 4.68-3.807 8.484-8.487 8.484-1.48 0-2.889-.387-4.113-1.063l-4.57 1.2 1.22-4.457c-.742-1.28-1.134-2.748-1.136-4.164.002-4.68 3.807-8.484 8.488-8.484 4.681 0 8.486 3.804 8.488 8.484z"/>
+    </svg>
+  </a>
+
+  <!-- Header / Navigation -->
+  <header>
+    <div class="container nav-wrapper">
+      <a href="/" class="brand">
+        <img src="hissab_logo_120.png" alt="Hissab Official Logo" class="brand-logo">
+        <div class="brand-text">
+          <span class="brand-title">Hissab</span>
+          <span class="brand-tagline">CashBook &amp; Ledger</span>
+        </div>
+      </a>
+
+      <nav class="nav-links">
+        <a href="#features">Features</a>
+        <a href="#screenshots">Screenshots</a>
+        <a href="#offline">Offline-First</a>
+        <a href="#cloud-backup">Drive Backup</a>
+        <a href="#how-it-works">How It Works</a>
+        <a href="#faq">FAQ</a>
+        <a href="/privacy-policy">Privacy</a>
+        <a href="/terms-and-conditions">Terms</a>
+        <a href="/contact">Contact</a>
+      </nav>
+
+      <div class="nav-actions">
+        <a href="/app" class="btn btn-primary">Open Web App</a>
+        <a href="https://wa.me/966503763410?text=Hello%20Hissab%20Support" target="_blank" rel="noopener noreferrer" class="btn btn-whatsapp">WhatsApp</a>
+      </div>
+    </div>
+  </header>
+
+  <!-- Hero Section -->
+  <section class="hero">
+    <div class="container">
+      <div class="hero-badge">
+        <span>✨</span> 100% Offline-First Personal &amp; Business Accounting
+      </div>
+
+      <!-- Animated Official Hissab Logo -->
+      <div class="logo-hero-container">
+        <div class="logo-ring"></div>
+        <img src="hissab_logo_120.png" alt="Hissab Leather Logo" class="logo-hero-img">
+      </div>
+
+      <h1 class="hero-title">
+        Smart CashBook &amp; <span class="gradient">Personal Business</span> Ledger
+      </h1>
+
+      <p class="hero-sub">
+        Track income and expenses, manage customer &amp; supplier ledgers (Udhar/Khaata), perform inter-account transfers, generate PDF reports, work completely offline, and backup privately to your own Google Drive.
+      </p>
+
+      <div class="hero-cta">
+        <a href="/app" class="btn btn-primary">🚀 Launch Web App</a>
+        <a href="https://wa.me/966503763410?text=Hello%20I%20want%20to%20download%20Hissab%20APK" class="btn btn-whatsapp" target="_blank" rel="noopener noreferrer">💬 Get APK on WhatsApp</a>
+        <a href="#screenshots" class="btn btn-outline">View App Screens ↓</a>
+      </div>
+
+      <div class="hero-highlights">
+        <div><span>🛡️</span> Zero Cloud Custody</div>
+        <div><span>⚡</span> Local SQLite Speed</div>
+        <div><span>☁️</span> Private Google Drive</div>
+        <div><span>🌐</span> English • اردو • العربية</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- App Screenshots Showcase Section -->
+  <section id="screenshots" style="background: #F1F5F9; border-top: 1px solid #E2E8F0; border-bottom: 1px solid #E2E8F0;">
+    <div class="container">
+      <div class="section-header">
+        <div class="section-tag">Visual Walkthrough</div>
+        <h2 class="section-title">Actual App Interface Screenshots</h2>
+        <p class="section-desc">Experience the clean, intuitive interface designed for rapid daily bookkeeping in retail stores, freelance work, and personal budgets.</p>
+      </div>
+
+      <div class="screenshots-showcase">
+        <div class="screenshot-card">
+          <img src="images/screen_dashboard.png" alt="Hissab Dashboard Screenshot">
+          <h4>Smart CashFlow Dashboard</h4>
+          <p>Real-time Cash In, Cash Out, and Net Balance with horizontal book comparisons and localized currencies.</p>
+        </div>
+
+        <div class="screenshot-card">
+          <img src="images/screen_settings.png" alt="Hissab Settings & Cloud Backup Screenshot">
+          <h4>Google Cloud Backup &amp; Restore</h4>
+          <p>AES-256 encrypted Google Drive integration with 16-character recovery key and automatic background sync.</p>
+        </div>
+
+        <div class="screenshot-card">
+          <img src="images/screen_onboarding.png" alt="Hissab Onboarding & Welcome Screen">
+          <h4>Clean Onboarding &amp; Multi-Book</h4>
+          <p>Instant setup without mandatory phone verification or cloud sign-in. Ready in seconds.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 14 Core Features -->
+  <section id="features">
+    <div class="container">
+      <div class="section-header">
+        <div class="section-tag">Engineered for Excellence</div>
+        <h2 class="section-title">Everything You Need to Master Your Numbers</h2>
+        <p class="section-desc">From daily pocket expenses to full retail shop bookkeeping, Hissab provides comprehensive financial control without internet dependencies.</p>
+      </div>
+
+      <div class="features-grid">
+        <div class="feature-card">
+          <div class="feature-icon">💵</div>
+          <h3>Income &amp; Expense Tracking</h3>
+          <p>Instant two-button Cash In and Cash Out recording with real-time balance calculations and category tagging.</p>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-icon">📚</div>
+          <h3>Multiple Independent Books</h3>
+          <p>Create separate books for Personal Expenses, Retail Shop, Construction, or Rentals with total isolation.</p>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-icon">👥</div>
+          <h3>Party &amp; Customer Ledgers</h3>
+          <p>Track who owes you money (Receivables / Lena) and who you owe (Payables / Dena) with contact linking.</p>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-icon">🏦</div>
+          <h3>Bank &amp; Wallet Accounts</h3>
+          <p>Manage Cash-in-Hand, Al Rajhi, SNB, HBL, Meezan, and digital wallets with localized bank logos.</p>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-icon">🔄</div>
+          <h3>Inter-Account Transfers</h3>
+          <p>Record ATM cash withdrawals, bank deposits, and transfers between wallets without polluting revenue reports.</p>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-icon">🧠</div>
+          <h3>Smart Category Detection</h3>
+          <p>Multilingual auto-categorization recognizes English, Urdu, and Arabic keywords (e.g. Fuel, کرایہ, راتب).</p>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-icon">🎙️</div>
+          <h3>Voice-Assisted Entry</h3>
+          <p>Speak your transaction details in Urdu, Arabic, or English to record entries hands-free while on the move.</p>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-icon">⚡</div>
+          <h3>100% Offline-First</h3>
+          <p>Built directly on local SQLite. Works instantly with zero cellular data, zero Wi-Fi, and zero cloud latency.</p>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-icon">📊</div>
+          <h3>Real-Time Analytics</h3>
+          <p>Visual daily balance charts, horizontal cashflow comparisons, and category distribution graphs.</p>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-icon">📄</div>
+          <h3>PDF &amp; Excel Reports</h3>
+          <p>Export complete transaction statements and date-filtered ledgers formatted with Unicode Urdu &amp; Arabic fonts.</p>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-icon">🧾</div>
+          <h3>Digital Payment Receipts</h3>
+          <p>Generate branded payment vouchers and customer receipts ready to share via WhatsApp or print via Bluetooth.</p>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-icon">☁️</div>
+          <h3>Private Google Drive Backup</h3>
+          <p>Upload encrypted backup files directly to your personal Google Drive account. We never touch your data.</p>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-icon">🔑</div>
+          <h3>Cross-Device Restore</h3>
+          <p>Easily switch to a new phone or sync between devices using your private 16-character recovery key.</p>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-icon">🔐</div>
+          <h3>AES-256 Military Encryption</h3>
+          <p>Backups are encrypted on your device using AES-256-GCM before leaving your phone. Even Google cannot inspect it.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Offline-First Architecture Section -->
+  <section id="offline">
+    <div class="container">
+      <div class="banner-card">
+        <div class="banner-content">
+          <div class="section-tag">Total Data Sovereignty</div>
+          <h3>Your Accounting Stays on Your Device. Always.</h3>
+          <p>Most accounting apps require you to upload your sensitive profits, margins, and customer lists to their cloud servers. Hissab is fundamentally different.</p>
+          <ul class="check-list">
+            <li><span class="icon">✓</span> <strong>Offline-First SQLite:</strong> Every transaction is saved instantly to local phone storage.</li>
+            <li><span class="icon">✓</span> <strong>Zero Cloud Vendor Lock-in:</strong> The app never stops working when internet signals drop.</li>
+            <li><span class="icon">✓</span> <strong>No Tracking or Profiling:</strong> We have no tracking cookies, analytics trackers, or advertising IDs.</li>
+          </ul>
+        </div>
+        <div class="security-badge-box">
+          <div style="font-size: 3.5rem; margin-bottom: 1rem;">🛡️</div>
+          <h4 style="font-size: 1.3rem; margin-bottom: 0.5rem; color: #0F172A;">Local Database Integrity</h4>
+          <p style="font-size: 0.92rem; color: var(--text-muted); line-height: 1.6;">
+            All transactions and accounts are managed through ACID-compliant SQLite transactions with automated rollbacks and zero data loss safeguards.
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Google Drive Backup & Transparency Section -->
+  <section id="cloud-backup">
+    <div class="container">
+      <div class="section-header">
+        <div class="section-tag">Private Cloud Backup</div>
+        <h2 class="section-title">Transparent Google Drive Integration</h2>
+        <p class="section-desc">Protect your financial records against lost phones or accidental uninstalls without surrendering your privacy.</p>
+      </div>
+
+      <div class="banner-card" style="background: #F8FAFC; border-color: #CBD5E1;">
+        <div class="security-badge-box" style="text-align: left; background: #FFFFFF;">
+          <h4 style="font-size: 1.25rem; margin-bottom: 1rem; color: var(--primary);">How Hissab Uses Google Services:</h4>
+          <ul class="check-list">
+            <li><span class="icon">1.</span> <strong>Your Own Google Account:</strong> You sign into your own Google Account. We do not use developer or central servers.</li>
+            <li><span class="icon">2.</span> <strong>Narrow Scope (drive.file):</strong> Hissab only requests permission to view and manage files that Hissab itself creates. It cannot read your personal photos, docs, or emails.</li>
+            <li><span class="icon">3.</span> <strong>Client-Side Encryption:</strong> Data is encrypted with AES-256 before leaving your phone.</li>
+            <li><span class="icon">4.</span> <strong>16-Character Key:</strong> Your personal recovery key ensures only you can restore your books.</li>
+          </ul>
+        </div>
+
+        <div class="banner-content">
+          <h3>Restore Anywhere in Seconds</h3>
+          <p>
+            When you get a new mobile phone, simply install Hissab, sign into your Google Account, and tap <strong>Restore Cloud</strong>. Your complete books, historical ledger, customer balances, and settings are restored instantly.
+          </p>
+          <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+            <a href="/privacy-policy" class="btn btn-outline">Read Privacy Disclosures →</a>
+            <a href="/contact" class="btn btn-primary">Contact Support</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- How It Works -->
+  <section id="how-it-works">
+    <div class="container">
+      <div class="section-header">
+        <div class="section-tag">Simple 4-Step Flow</div>
+        <h2 class="section-title">How Hissab Works</h2>
+        <p class="section-desc">Designed for busy shopkeepers, freelancers, contractors, and individuals who need frictionless bookkeeping.</p>
+      </div>
+
+      <div class="steps-grid">
+        <div class="step-card">
+          <div class="step-num">1</div>
+          <h4>Create a CashBook</h4>
+          <p>Set up one or multiple books (e.g. "Main Shop", "Home", "Delivery Fleet") and select your default currency.</p>
+        </div>
+
+        <div class="step-card">
+          <div class="step-num">2</div>
+          <h4>Record Cash In &amp; Out</h4>
+          <p>Tap Green for Cash In or Red for Cash Out. Add notes, attach customer/vendor parties, and assign bank accounts.</p>
+        </div>
+
+        <div class="step-card">
+          <div class="step-num">3</div>
+          <h4>View Instant Ledgers</h4>
+          <p>Monitor live balances, track unpaid customer credit, and generate PDF statements with Unicode typography.</p>
+        </div>
+
+        <div class="step-card">
+          <div class="step-num">4</div>
+          <h4>Backup to Google Drive</h4>
+          <p>Optionally connect Google to automatically sync encrypted snapshots to your private Drive storage.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FAQ Section -->
+  <section id="faq">
+    <div class="container">
+      <div class="section-header">
+        <div class="section-tag">Got Questions?</div>
+        <h2 class="section-title">Frequently Asked Questions</h2>
+        <p class="section-desc">Direct, honest answers about Hissab, data privacy, and Google integration.</p>
+      </div>
+
+      <div class="faq-container">
+        <div class="faq-item">
+          <div class="faq-question">Is Hissab free to use? <span>+</span></div>
+          <div class="faq-answer">Yes, Hissab is completely free to download and use for personal and small business accounting. There are no paywalls on basic accounting features.</div>
+        </div>
+
+        <div class="faq-item">
+          <div class="faq-question">Does Hissab work offline without internet? <span>+</span></div>
+          <div class="faq-answer">Yes, 100%. Hissab is built from the ground up as an offline-first app. All your books, transactions, and customer balances are saved directly into your device's local SQLite database. Internet is only required if you choose to upload a backup to Google Drive.</div>
+        </div>
+
+        <div class="faq-item">
+          <div class="faq-question">Where is my cloud backup stored? <span>+</span></div>
+          <div class="faq-answer">Your backup is stored directly inside your own personal Google Drive under a dedicated "Hissab" folder. Hissab does not operate developer servers or store copies of your data on third-party servers.</div>
+        </div>
+
+        <div class="faq-item">
+          <div class="faq-question">Does Hissab see my Google password or financial numbers? <span>+</span></div>
+          <div class="faq-answer">No. Google Sign-In is handled entirely by official Google Identity Services; your password is never exposed to Hissab. Furthermore, before backup files are sent to your Drive, they are encrypted with AES-256 authenticated encryption using your private recovery key.</div>
+        </div>
+
+        <div class="faq-item">
+          <div class="faq-question">Can I restore my records on another phone? <span>+</span></div>
+          <div class="faq-answer">Yes. On your new phone, install Hissab, sign into the same Google Account, and tap "Restore Cloud". Enter your 16-character recovery key and all your books and transactions will be restored.</div>
+        </div>
+
+        <div class="faq-item">
+          <div class="faq-question">Is Google Drive backup mandatory? <span>+</span></div>
+          <div class="faq-answer">No, Google Drive backup is entirely optional. You can use Hissab indefinitely as a standalone, 100% offline accounting app without ever connecting a Google Account.</div>
+        </div>
+
+        <div class="faq-item">
+          <div class="faq-question">What happens if Google Drive backup fails? <span>+</span></div>
+          <div class="faq-answer">Your local data is completely safe and unaffected! If your internet drops or authentication expires, Hissab marks the backup as pending and preserves your local SQLite database without any interruption.</div>
+        </div>
+
+        <div class="faq-item">
+          <div class="faq-question">Can I manage multiple businesses or cashbooks separately? <span>+</span></div>
+          <div class="faq-answer">Yes. You can create unlimited distinct cashbooks (e.g. Shop, Grocery, Personal, Savings) with isolated transactions, separate balances, and customized colors/logos.</div>
+        </div>
+      </div>
+
+      <!-- Direct WhatsApp Callout Banner -->
+      <div class="whatsapp-banner">
+        <h3>Have a Question or Need Instant Support?</h3>
+        <p>Chat directly with the developer on WhatsApp for quick assistance, APK installation guide, or feature requests.</p>
+        <a href="https://wa.me/966503763410?text=Hello%20I%20have%20a%20question%20about%20Hissab" target="_blank" rel="noopener noreferrer" class="btn btn-whatsapp" style="font-size: 1.05rem; padding: 0.85rem 2rem;">
+          💬 Chat on WhatsApp (+966 50 376 3410)
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer>
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-about">
+          <a href="/" class="brand">
+            <img src="hissab_logo_120.png" alt="Hissab Logo" class="brand-logo">
+            <div class="brand-text">
+              <span class="brand-title">Hissab</span>
+              <span class="brand-tagline">CashBook &amp; Ledger</span>
+            </div>
+          </a>
+          <p>
+            Offline-first personal &amp; business accounting app. Simple, secure, and respectful of your data privacy.
+          </p>
+          <div style="margin-top: 1.25rem;">
+            <a href="https://usman-professional-portfolio.netlify.app/" target="_blank" rel="noopener noreferrer" style="color: var(--primary); font-size: 0.88rem; font-weight: 700; text-decoration: none;">
+              👨‍💻 Developer Portfolio &rarr;
+            </a>
+          </div>
+        </div>
+
+        <div class="footer-col">
+          <h5>Product</h5>
+          <ul>
+            <li><a href="/app">Launch Web App</a></li>
+            <li><a href="#screenshots">App Screenshots</a></li>
+            <li><a href="#features">Features</a></li>
+            <li><a href="#offline">Offline-First</a></li>
+          </ul>
+        </div>
+
+        <div class="footer-col">
+          <h5>Legal &amp; Privacy</h5>
+          <ul>
+            <li><a href="/privacy-policy">Privacy Policy</a></li>
+            <li><a href="/terms-and-conditions">Terms &amp; Conditions</a></li>
+            <li><a href="#cloud-backup">Google OAuth Disclosures</a></li>
+          </ul>
+        </div>
+
+        <div class="footer-col">
+          <h5>Developer &amp; Support</h5>
+          <ul>
+            <li><a href="/contact">Contact Support</a></li>
+            <li><a href="https://wa.me/966503763410?text=Hello%20Hissab%20Support" target="_blank" rel="noopener noreferrer">WhatsApp: +966 50 376 3410</a></li>
+            <li><a href="mailto:usmaan.ec@gmail.com">usmaan.ec@gmail.com</a></li>
+            <li><a href="https://usman-professional-portfolio.netlify.app/" target="_blank" rel="noopener noreferrer">Muhammad Usman Portfolio</a></li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="footer-bottom">
+        <div>&copy; 2026 Hissab. All rights reserved. Developed by <a href="https://usman-professional-portfolio.netlify.app/" target="_blank" rel="noopener noreferrer" style="color: var(--primary); font-weight: 700; text-decoration: none;">Muhammad Usman</a>.</div>
+        <div style="display: flex; gap: 1.5rem;">
+          <a href="/privacy-policy" style="color: var(--text-muted); text-decoration: none;">Privacy Policy</a>
+          <a href="/terms-and-conditions" style="color: var(--text-muted); text-decoration: none;">Terms of Service</a>
+          <a href="/contact" style="color: var(--text-muted); text-decoration: none;">Help &amp; Contact</a>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    // FAQ Accordion toggle
+    document.querySelectorAll('.faq-question').forEach(item => {
+      item.addEventListener('click', () => {
+        const parent = item.parentElement;
+        const answer = parent.querySelector('.faq-answer');
+        const span = item.querySelector('span');
+        const isOpen = answer.style.display === 'block';
+
+        document.querySelectorAll('.faq-answer').forEach(a => a.style.display = 'none');
+        document.querySelectorAll('.faq-question span').forEach(s => s.textContent = '+');
+
+        if (!isOpen) {
+          answer.style.display = 'block';
+          span.textContent = '−';
+        }
+      });
+    });
+    // Open first FAQ by default
+    const firstFaq = document.querySelector('.faq-answer');
+    if (firstFaq) {
+      firstFaq.style.display = 'block';
+      document.querySelector('.faq-question span').textContent = '−';
+    }
+  </script>
 </body>
 </html>

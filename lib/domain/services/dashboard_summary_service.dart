@@ -55,7 +55,11 @@ class DashboardSummaryService {
     final db = await _db;
     final List<BookModel> books;
     if (_database != null) {
-      final rows = await db.query(Tables.books, where: 'is_deleted = 0 AND is_archived = 0');
+      final rows = await db.query(
+        Tables.books,
+        where: 'is_deleted = 0 AND is_archived = 0',
+        orderBy: 'display_order ASC, created_at DESC',
+      );
       books = rows.map(BookModel.fromMap).toList();
     } else {
       books = await _bookRepository.getBooks();
