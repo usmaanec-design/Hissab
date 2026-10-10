@@ -90,4 +90,15 @@ class PartyRepository {
       whereArgs: [partyId, bookId],
     );
   }
+
+  /// Get ALL active parties across ALL books
+  Future<List<PartyModel>> getAllPartiesFromAllBooks() async {
+    final db = await _dbProvider.database;
+    final result = await db.query(
+      Tables.parties,
+      where: 'is_deleted = 0',
+      orderBy: 'name ASC',
+    );
+    return result.map((m) => PartyModel.fromMap(m)).toList();
+  }
 }

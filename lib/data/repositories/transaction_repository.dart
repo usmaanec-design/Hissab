@@ -289,6 +289,17 @@ class TransactionRepository {
     return result.map((m) => TransactionModel.fromMap(m)).toList();
   }
 
+  /// Get ALL non-deleted transactions across ALL books (for multi-book reporting)
+  Future<List<TransactionModel>> getAllActiveTransactionsFromAllBooks() async {
+    final db = await _dbProvider.database;
+    final result = await db.query(
+      Tables.transactions,
+      where: 'is_deleted = 0',
+      orderBy: 'date ASC, time ASC, created_at ASC',
+    );
+    return result.map((m) => TransactionModel.fromMap(m)).toList();
+  }
+
   /// Get recent transactions for the dashboard
   Future<List<TransactionModel>> getRecentTransactions(String bookId, {int limit = 10}) async {
     return getTransactions(

@@ -12,6 +12,8 @@ import '../database/app_database.dart';
 import '../database/tables.dart';
 import '../models/book_model.dart';
 import '../models/transaction_model.dart';
+import '../models/party_model.dart';
+import '../../domain/accounting/accounting_engine.dart';
 
 class BackupRepository {
   final AppDatabase _dbProvider = AppDatabase.instance;
@@ -560,4 +562,430 @@ class BackupRepository {
 
     return pdf.save();
   }
+
+  /// Generate comprehensive Multi-Book, Multi-Currency PDF Report
+  /// Segregates all calculations strictly by currency (e.g. SAR totals are never mixed with PKR totals).
+  /// Includes Cash In, Cash Out, Net Cash Flow, and Loan / Udhar Given & Taken for all books.
+  Future<Uint8List> generateMultiBookPdfReport({
+    required List<BookModel> books,
+    required List<TransactionModel> transactions,
+    required List<PartyModel> parties,
+    required String dateRangeLabel,
+    String? specificCurrency,
+  }) async {
+    final theme = await PdfFontService.instance.getPdfTheme();
+    final pdf = pw.Document(theme: theme);
+
+    pw.MemoryImage? logoImage;
+    try {
+      final logoBytes = await rootBundle.load(AppAssets.logo);
+      logoImage = pw.MemoryImage(logoBytes.buffer.asUint8List());
+    } catch (_) {
+      try {
+        final logoBytes = await rootBundle.load(AppAssets.logoAlias);
+        logoImage = pw.MemoryImage(logoBytes.buffer.asUint8List());
+      } catch (_) {}
+    }
+
+    // Group books strictly by Currency
+    final Map<String, List<BookModel>> booksByCurrency = {};
+    for (final book in books) {
+      final code = book.currency.toUpperCase();
+      if (specificCurrency != null && code != specificCurrency.toUpperCase()) {
+        continue;
+      }
+      booksByCurrency.putIfAbsent(code, () => []).add(book);
+    }
+
+    // Pre-calculate per-currency summaries
+    final currencySummaries = <String, _CurrencyReportData>{};
+    for (final entry in booksByCurrency.entries) {
+      final currCode = entry.key;
+      final currBooks = entry.value;
+      final bookIds = currBooks.map((b) => b.id).toSet();
+      final currConfig = Currencies.findByCode(currCode);
+
+      final currTxs = transactions.where((tx) => !tx.isDeleted && bookIds.contains(tx.bookId)).toList();
+      final currParties = parties.where((p) => !p.isDeleted && bookIds.contains(p.bookId)).toList();
+
+      int totalIn = 0;
+      int totalOut = 0;
+      for (final tx in currTxs) {
+        if (tx.type.isMoneyIn) totalIn += tx.amountMinorUnit;
+        if (tx.type.isMoneyOut) totalOut += tx.amountMinorUnit;
+      }
+
+      int totalReceivable = 0;
+      int totalPayable = 0;
+      for (final party in currParties) {
+        final pTxs = transactions.where((tx) => !tx.isDeleted && tx.bookId == party.bookId).toList();
+        final summary = AccountingEngine.calculatePartySummary(
+          partyId: party.id,
+          partyType: party.type,
+          transactions: pTxs,
+        );
+        if (party.type.toLowerCase() == 'customer') {
+          if (summary.outstandingMinor > 0) totalReceivable += summary.outstandingMinor;
+        } else {
+          if (summary.outstandingMinor > 0) totalPayable += summary.outstandingMinor;
+        }
+      }
+
+      final bookStatsList = <_BookReportStat>[];
+      for (final b in currBooks) {
+        final bTxs = currTxs.where((tx) => tx.bookId == b.id).toList();
+        int bIn = 0;
+        int bOut = 0;
+        for (final tx in bTxs) {
+          if (tx.type.isMoneyIn) bIn += tx.amountMinorUnit;
+          if (tx.type.isMoneyOut) bOut += tx.amountMinorUnit;
+        }
+
+        int bRec = 0;
+        int bPay = 0;
+        final bParties = currParties.where((p) => p.bookId == b.id).toList();
+        final bAllTxs = transactions.where((tx) => !tx.isDeleted && tx.bookId == b.id).toList();
+        for (final bp in bParties) {
+          final s = AccountingEngine.calculatePartySummary(partyId: bp.id, partyType: bp.type, transactions: bAllTxs);
+          if (bp.type.toLowerCase() == 'customer') {
+            if (s.outstandingMinor > 0) bRec += s.outstandingMinor;
+          } else {
+            if (s.outstandingMinor > 0) bPay += s.outstandingMinor;
+          }
+        }
+
+        bookStatsList.add(_BookReportStat(
+          book: b,
+          totalIn: bIn,
+          totalOut: bOut,
+          netFlow: bIn - bOut,
+          loanGiven: bRec,
+          loanTaken: bPay,
+        ));
+      }
+
+      currencySummaries[currCode] = _CurrencyReportData(
+        currencyConfig: currConfig,
+        books: currBooks,
+        transactions: currTxs,
+        totalIn: totalIn,
+        totalOut: totalOut,
+        netCashFlow: totalIn - totalOut,
+        totalLoanGiven: totalReceivable,
+        totalLoanTaken: totalPayable,
+        bookStats: bookStatsList,
+      );
+    }
+
+    pdf.addPage(
+      pw.MultiPage(
+        pageFormat: PdfPageFormat.a4,
+        margin: const pw.EdgeInsets.all(28),
+        build: (context) {
+          final widgets = <pw.Widget>[];
+
+          // Overall Report Header
+          widgets.add(
+            pw.Row(
+              mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+              crossAxisAlignment: pw.CrossAxisAlignment.center,
+              children: [
+                pw.Row(
+                  crossAxisAlignment: pw.CrossAxisAlignment.center,
+                  children: [
+                    if (logoImage != null)
+                      pw.Container(
+                        width: 44,
+                        height: 44,
+                        margin: const pw.EdgeInsets.only(right: 12),
+                        child: pw.ClipRRect(
+                          horizontalRadius: 8,
+                          verticalRadius: 8,
+                          child: pw.Image(logoImage, fit: pw.BoxFit.contain),
+                        ),
+                      ),
+                    pw.Column(
+                      crossAxisAlignment: pw.CrossAxisAlignment.start,
+                      children: [
+                        pw.Text('HISSAB FINANCIAL & LOAN REPORT',
+                            style: pw.TextStyle(
+                                fontSize: 18, fontWeight: pw.FontWeight.bold, color: PdfColors.blue900)),
+                        pw.Text('Multi-Book CashBook & Udhar (Strict Currency Segregation)',
+                            style: const pw.TextStyle(fontSize: 10, color: PdfColors.grey700)),
+                        pw.Text('Generated: ${DateTime.now().toString().substring(0, 16)}',
+                            style: const pw.TextStyle(fontSize: 8.5, color: PdfColors.grey600)),
+                      ],
+                    ),
+                  ],
+                ),
+                pw.Container(
+                  padding: const pw.EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  decoration: pw.BoxDecoration(
+                    color: PdfColors.blue50,
+                    borderRadius: pw.BorderRadius.circular(6),
+                    border: pw.Border.all(color: PdfColors.blue200),
+                  ),
+                  child: pw.Column(
+                    crossAxisAlignment: pw.CrossAxisAlignment.end,
+                    children: [
+                      pw.Text('Period: $dateRangeLabel',
+                          style: pw.TextStyle(fontSize: 9.5, fontWeight: pw.FontWeight.bold, color: PdfColors.blue900)),
+                      pw.Text('Total Books: ${books.length}',
+                          style: const pw.TextStyle(fontSize: 8.5, color: PdfColors.grey700)),
+                      pw.Text('Currencies: ${booksByCurrency.keys.join(", ")}',
+                          style: pw.TextStyle(fontSize: 8.5, fontWeight: pw.FontWeight.bold, color: PdfColors.blue800)),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          );
+
+          widgets.add(pw.SizedBox(height: 14));
+          widgets.add(pw.Divider(thickness: 1, color: PdfColors.grey300));
+          widgets.add(pw.SizedBox(height: 10));
+
+          // Each Currency Section
+          for (final currEntry in currencySummaries.entries) {
+            final data = currEntry.value;
+            final cfg = data.currencyConfig;
+
+            widgets.add(
+              pw.Container(
+                margin: const pw.EdgeInsets.only(top: 8, bottom: 8),
+                padding: const pw.EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                decoration: pw.BoxDecoration(
+                  color: PdfColors.blue900,
+                  borderRadius: pw.BorderRadius.circular(6),
+                ),
+                child: pw.Row(
+                  mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                  children: [
+                    pw.Text(
+                      'CURRENCY: ${cfg.code} - ${cfg.name} (${cfg.symbol})',
+                      style: pw.TextStyle(color: PdfColors.white, fontWeight: pw.FontWeight.bold, fontSize: 11),
+                    ),
+                    pw.Text(
+                      '${data.books.length} Book(s) Included',
+                      style: const pw.TextStyle(color: PdfColors.white, fontSize: 9.5),
+                    ),
+                  ],
+                ),
+              ),
+            );
+
+            // KPI Stat Cards for this currency
+            widgets.add(
+              pw.Row(
+                children: [
+                  _buildPdfStatBox('Total In', CurrencyFormatter.format(data.totalIn, cfg), PdfColors.green800),
+                  pw.SizedBox(width: 6),
+                  _buildPdfStatBox('Total Out', CurrencyFormatter.format(data.totalOut, cfg), PdfColors.red800),
+                  pw.SizedBox(width: 6),
+                  _buildPdfStatBox('Net Cash Flow', CurrencyFormatter.format(data.netCashFlow, cfg),
+                      data.netCashFlow >= 0 ? PdfColors.green800 : PdfColors.red800),
+                  pw.SizedBox(width: 6),
+                  _buildPdfStatBox('Udhar Diya (Get)', CurrencyFormatter.format(data.totalLoanGiven, cfg), PdfColors.blue800),
+                  pw.SizedBox(width: 6),
+                  _buildPdfStatBox('Udhar Liya (Give)', CurrencyFormatter.format(data.totalLoanTaken, cfg), PdfColors.orange800),
+                ],
+              ),
+            );
+
+            widgets.add(pw.SizedBox(height: 8));
+
+            // Visual Candle / Bar Comparison Representation in PDF
+            final maxVal = [data.totalIn, data.totalOut, data.totalLoanGiven, data.totalLoanTaken]
+                .reduce((a, b) => a > b ? a : b);
+
+            widgets.add(
+              pw.Container(
+                padding: const pw.EdgeInsets.all(8),
+                decoration: pw.BoxDecoration(
+                  color: PdfColors.grey100,
+                  borderRadius: pw.BorderRadius.circular(6),
+                  border: pw.Border.all(color: PdfColors.grey300),
+                ),
+                child: pw.Column(
+                  crossAxisAlignment: pw.CrossAxisAlignment.start,
+                  children: [
+                    pw.Text('Financial & Udhar Comparison (${cfg.code})',
+                        style: pw.TextStyle(fontSize: 8.5, fontWeight: pw.FontWeight.bold, color: PdfColors.grey800)),
+                    pw.SizedBox(height: 6),
+                    _buildPdfVisualBar('Total Cash In', data.totalIn, maxVal, cfg, PdfColors.green700),
+                    pw.SizedBox(height: 3),
+                    _buildPdfVisualBar('Total Cash Out', data.totalOut, maxVal, cfg, PdfColors.red700),
+                    pw.SizedBox(height: 3),
+                    _buildPdfVisualBar('Udhar Diya (Loan Given)', data.totalLoanGiven, maxVal, cfg, PdfColors.blue700),
+                    pw.SizedBox(height: 3),
+                    _buildPdfVisualBar('Udhar Liya (Loan Taken)', data.totalLoanTaken, maxVal, cfg, PdfColors.orange700),
+                  ],
+                ),
+              ),
+            );
+
+            widgets.add(pw.SizedBox(height: 8));
+
+            // Books Breakdown Table under this Currency
+            widgets.add(
+              pw.Text('Books Breakdown under ${cfg.code}:',
+                  style: pw.TextStyle(fontSize: 9.5, fontWeight: pw.FontWeight.bold, color: PdfColors.blue900)),
+            );
+            widgets.add(pw.SizedBox(height: 4));
+
+            widgets.add(
+              pw.Table(
+                columnWidths: {
+                  0: const pw.FlexColumnWidth(2.8),
+                  1: const pw.FlexColumnWidth(1.6),
+                  2: const pw.FlexColumnWidth(1.6),
+                  3: const pw.FlexColumnWidth(1.6),
+                  4: const pw.FlexColumnWidth(1.8),
+                  5: const pw.FlexColumnWidth(1.8),
+                },
+                children: [
+                  pw.TableRow(
+                    decoration: const pw.BoxDecoration(color: PdfColors.grey200),
+                    children: [
+                      _buildPdfTableCell('Book Name', isHeader: true),
+                      _buildPdfTableCell('In (+)', isHeader: true, align: pw.TextAlign.right),
+                      _buildPdfTableCell('Out (-)', isHeader: true, align: pw.TextAlign.right),
+                      _buildPdfTableCell('Net Flow', isHeader: true, align: pw.TextAlign.right),
+                      _buildPdfTableCell('Udhar Diya', isHeader: true, align: pw.TextAlign.right),
+                      _buildPdfTableCell('Udhar Liya', isHeader: true, align: pw.TextAlign.right),
+                    ],
+                  ),
+                  ...data.bookStats.map((bs) {
+                    final isRtl = PdfFontService.isRtlText(bs.book.name);
+                    return pw.TableRow(
+                      decoration: const pw.BoxDecoration(
+                        border: pw.Border(bottom: pw.BorderSide(color: PdfColors.grey200)),
+                      ),
+                      children: [
+                        _buildPdfTableCell(bs.book.name, isRtl: isRtl),
+                        _buildPdfTableCell(DecimalCalculator.formatDecimal(bs.totalIn, cfg), align: pw.TextAlign.right, color: PdfColors.green800),
+                        _buildPdfTableCell(DecimalCalculator.formatDecimal(bs.totalOut, cfg), align: pw.TextAlign.right, color: PdfColors.red800),
+                        _buildPdfTableCell(DecimalCalculator.formatDecimal(bs.netFlow, cfg), align: pw.TextAlign.right, color: bs.netFlow >= 0 ? PdfColors.green800 : PdfColors.red800),
+                        _buildPdfTableCell(DecimalCalculator.formatDecimal(bs.loanGiven, cfg), align: pw.TextAlign.right, color: PdfColors.blue800),
+                        _buildPdfTableCell(DecimalCalculator.formatDecimal(bs.loanTaken, cfg), align: pw.TextAlign.right, color: PdfColors.orange800),
+                      ],
+                    );
+                  }),
+                ],
+              ),
+            );
+
+            widgets.add(pw.SizedBox(height: 14));
+          }
+
+          return widgets;
+        },
+        footer: (context) => pw.Row(
+          mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+          children: [
+            pw.Text('Hissab Accounting Engine - Deterministic Multi-Book Currency Segregation',
+                style: const pw.TextStyle(fontSize: 7.5, color: PdfColors.grey600)),
+            pw.Text('Page ${context.pageNumber} of ${context.pagesCount}',
+                style: const pw.TextStyle(fontSize: 7.5, color: PdfColors.grey600)),
+          ],
+        ),
+      ),
+    );
+
+    return pdf.save();
+  }
+
+  pw.Widget _buildPdfVisualBar(String label, int value, int maxVal, CurrencyConfig cfg, PdfColor barColor) {
+    final double ratio = maxVal > 0 ? (value / maxVal).clamp(0.02, 1.0) : 0.02;
+    final int fillFlex = (ratio * 100).round().clamp(2, 100);
+    final int emptyFlex = (100 - fillFlex).clamp(0, 98);
+
+    return pw.Row(
+      children: [
+        pw.SizedBox(
+          width: 130,
+          child: pw.Text(label, style: const pw.TextStyle(fontSize: 8, color: PdfColors.grey700)),
+        ),
+        pw.Expanded(
+          child: pw.Container(
+            height: 8,
+            decoration: pw.BoxDecoration(
+              color: PdfColors.grey200,
+              borderRadius: pw.BorderRadius.circular(4),
+            ),
+            child: pw.Row(
+              children: [
+                pw.Expanded(
+                  flex: fillFlex,
+                  child: pw.Container(
+                    height: 8,
+                    decoration: pw.BoxDecoration(
+                      color: barColor,
+                      borderRadius: pw.BorderRadius.circular(4),
+                    ),
+                  ),
+                ),
+                if (emptyFlex > 0)
+                  pw.Expanded(
+                    flex: emptyFlex,
+                    child: pw.SizedBox(),
+                  ),
+              ],
+            ),
+          ),
+        ),
+        pw.SizedBox(width: 8),
+        pw.SizedBox(
+          width: 90,
+          child: pw.Text(
+            CurrencyFormatter.format(value, cfg),
+            textAlign: pw.TextAlign.right,
+            style: pw.TextStyle(fontSize: 8, fontWeight: pw.FontWeight.bold, color: barColor),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _CurrencyReportData {
+  final CurrencyConfig currencyConfig;
+  final List<BookModel> books;
+  final List<TransactionModel> transactions;
+  final int totalIn;
+  final int totalOut;
+  final int netCashFlow;
+  final int totalLoanGiven;
+  final int totalLoanTaken;
+  final List<_BookReportStat> bookStats;
+
+  _CurrencyReportData({
+    required this.currencyConfig,
+    required this.books,
+    required this.transactions,
+    required this.totalIn,
+    required this.totalOut,
+    required this.netCashFlow,
+    required this.totalLoanGiven,
+    required this.totalLoanTaken,
+    required this.bookStats,
+  });
+}
+
+class _BookReportStat {
+  final BookModel book;
+  final int totalIn;
+  final int totalOut;
+  final int netFlow;
+  final int loanGiven;
+  final int loanTaken;
+
+  _BookReportStat({
+    required this.book,
+    required this.totalIn,
+    required this.totalOut,
+    required this.netFlow,
+    required this.loanGiven,
+    required this.loanTaken,
+  });
 }
